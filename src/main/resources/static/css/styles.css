@@ -1,0 +1,11 @@
+body {
+    font-size: 0.95rem;
+}
+
+textarea.form-control {
+    min-height: 140px;
+}
+
+.badge {
+    font-weight: 500;
+}

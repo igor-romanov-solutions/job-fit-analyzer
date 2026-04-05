@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Job Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <div class="mb-4">
+        <div class="text-uppercase text-primary fw-semibold small mb-2">Smart matching for Java roles</div>
+        <h1 class="h2 mb-2">Job Analyzer</h1>
+        <p class="text-secondary mb-0">
+            Compare a candidate profile with job requirements and quickly spot strengths, stack fit, and gaps.
+        </p>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <h2 class="h5 mb-1">Analyze a candidate against a vacancy</h2>
+            <p class="text-secondary small mb-4">Paste the candidate summary and the job description below.</p>
+
+            <form th:action="@{/}" method="post" th:object="${analysisRequest}">
+                <div class="mb-3">
+                    <label for="candidateProfile" class="form-label">Candidate profile</label>
+                    <textarea class="form-control" th:field="*{candidateProfile}" id="candidateProfile" rows="6"
+                              placeholder="15 years Java, Spring, Hibernate&#10;Bank, Moscow&#10;2 years startup, Switzerland&#10;German A2"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="vacancyText" class="form-label">Job description</label>
+                    <textarea class="form-control" th:field="*{vacancyText}" id="vacancyText" rows="7"
+                              placeholder="Requirements: Java 17, Spring Boot, Docker, Kubernetes, German B1"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Analyze match</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${result != null}" class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <h2 class="h5 mb-1">Analysis result</h2>
+            <p class="text-secondary small mb-4">Structured overview of the profile match for this vacancy.</p>
+
+            <div class="row g-4">
+                <div th:if="${result.roleType != null}" class="col-md-6">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Role focus</div>
+                    <div th:text="${result.roleType}">Platform</div>
+                </div>
+
+                <div th:if="${result.javaRelevance != null}" class="col-md-6">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Java relevance</div>
+                    <div th:text="${result.javaRelevance}">High</div>
+                </div>
+
+                <div th:if="${result.seniorityLevel != null}" class="col-md-6">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Seniority level</div>
+                    <div th:text="${result.seniorityLevel}">Senior</div>
+                </div>
+
+                <div th:if="${result.domain != null}" class="col-md-6">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Domain</div>
+                    <div th:text="${result.domain}">Insurance</div>
+                </div>
+
+                <div th:if="${result.vacancyLanguage != null}" class="col-md-6">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Vacancy language</div>
+                    <div th:text="${result.vacancyLanguage}">German</div>
+                </div>
+
+                <div th:if="${result.requiredGermanLevel != null}" class="col-md-6">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-1">German required</div>
+                    <span class="badge text-bg-info" th:text="${result.requiredGermanLevel}">B2</span>
+                </div>
+
+                <div th:if="${not #lists.isEmpty(result.primaryStack)}" class="col-12">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Primary stack</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span th:each="tech : ${result.primaryStack}" class="badge rounded-pill text-bg-primary" th:text="${tech}">Java</span>
+                    </div>
+                </div>
+
+                <div th:if="${not #lists.isEmpty(result.secondaryStack)}" class="col-12">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Secondary stack</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span th:each="tech : ${result.secondaryStack}" class="badge rounded-pill text-bg-secondary" th:text="${tech}">Spring</span>
+                    </div>
+                </div>
+
+                <div th:if="${not #lists.isEmpty(result.niceToHaveStack)}" class="col-12">
+                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Nice to have</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span th:each="tech : ${result.niceToHaveStack}" class="badge rounded-pill text-bg-light border text-dark" th:text="${tech}">Kafka</span>
+                    </div>
+                </div>
+
+                <div th:if="${not #lists.isEmpty(result.gaps)}" class="col-12">
+                    <hr class="my-3">
+
+                    <div class="text-uppercase text-secondary small fw-semibold mb-2">
+                        Potential concerns
+                    </div>
+
+                    <div class="bg-light border rounded-3 p-3">
+                        <ul class="mb-0 ps-3">
+                            <li th:each="gap : ${result.gaps}" th:text="${gap}">
+                                Example concern
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${error != null}" class="alert alert-danger" th:text="${error}"></div>
+</div>
+
+</body>
+</html>
