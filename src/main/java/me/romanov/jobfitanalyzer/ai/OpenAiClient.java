@@ -1,4 +1,4 @@
-package me.romanov.jobfitanalyzer.service;
+package me.romanov.jobfitanalyzer.ai;
 
 import lombok.RequiredArgsConstructor;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;

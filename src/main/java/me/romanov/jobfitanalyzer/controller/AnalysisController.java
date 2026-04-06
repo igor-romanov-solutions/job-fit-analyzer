@@ -3,6 +3,7 @@ package me.romanov.jobfitanalyzer.controller;
 import me.romanov.jobfitanalyzer.dto.AnalysisRequest;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
 import me.romanov.jobfitanalyzer.service.AnalysisService;
+import me.romanov.jobfitanalyzer.service.AnalysisServiceImpl;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +15,7 @@ public class AnalysisController {
 
     private final AnalysisService analysisService;
 
-    public AnalysisController(AnalysisService analysisService) {
+    public AnalysisController(AnalysisServiceImpl analysisService) {
         this.analysisService = analysisService;
     }
 
@@ -27,7 +28,7 @@ public class AnalysisController {
     @PostMapping("/")
     public String analyze(@ModelAttribute AnalysisRequest request, Model model) {
         try {
-            AnalysisResult result = analysisService.analyze(request.getCandidateProfile(), request.getVacancyText());
+            AnalysisResult result = analysisService.analyzeAndSave(request);
             model.addAttribute("result", result);
         } catch (Exception e) {
             model.addAttribute("error", "Analysis failed: " + e.getMessage());

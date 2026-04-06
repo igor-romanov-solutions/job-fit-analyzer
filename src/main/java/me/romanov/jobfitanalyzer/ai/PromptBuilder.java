@@ -1,4 +1,4 @@
-package me.romanov.jobfitanalyzer.service;
+package me.romanov.jobfitanalyzer.ai;
 
 public class PromptBuilder {
     public static String buildSystemPrompt() {
