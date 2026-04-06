@@ -4,13 +4,17 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import me.romanov.jobfitanalyzer.ai.OpenAiClient;
 import me.romanov.jobfitanalyzer.ai.PromptBuilder;
+import me.romanov.jobfitanalyzer.dto.AnalysisHistoryItemDto;
 import me.romanov.jobfitanalyzer.dto.AnalysisRequest;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
+import me.romanov.jobfitanalyzer.dto.AnalysisViewDto;
 import me.romanov.jobfitanalyzer.entity.AnalysisEntity;
 import me.romanov.jobfitanalyzer.mapper.AnalysisMapper;
 import me.romanov.jobfitanalyzer.repository.AnalysisRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,14 +26,6 @@ public class AnalysisServiceImpl implements AnalysisService {
     private final OpenAiClient openAiClient;
     private final AnalysisRepository analysisRepository;
     private final AnalysisMapper analysisMapper;
-
-    /*public AnalysisServiceImpl(OpenAiClient openAiClient,
-                               AnalysisRepository analysisRepository,
-                               AnalysisMapper analysisMapper) {
-        this.openAiClient = openAiClient;
-        this.analysisRepository = analysisRepository;
-        this.analysisMapper = analysisMapper;
-    }*/
 
     @PostConstruct
     public void test() {
@@ -44,5 +40,21 @@ public class AnalysisServiceImpl implements AnalysisService {
         AnalysisEntity entity = analysisMapper.toEntity(request, result);
         analysisRepository.save(entity);
         return result;
+    }
+
+    @Override
+    public List<AnalysisHistoryItemDto> getHistory() {
+        return analysisRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(analysisMapper::toHistoryItemDto)
+                .toList();
+    }
+
+    @Override
+    public AnalysisViewDto getAnalysis(Long id) {
+        AnalysisEntity entity = analysisRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Analysis not found: " + id));
+
+        return analysisMapper.toViewDto(entity);
     }
 }
