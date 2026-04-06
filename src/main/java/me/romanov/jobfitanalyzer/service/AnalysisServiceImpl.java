@@ -12,7 +12,9 @@ import me.romanov.jobfitanalyzer.entity.AnalysisEntity;
 import me.romanov.jobfitanalyzer.mapper.AnalysisMapper;
 import me.romanov.jobfitanalyzer.repository.AnalysisRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -53,7 +55,7 @@ public class AnalysisServiceImpl implements AnalysisService {
     @Override
     public AnalysisViewDto getAnalysis(Long id) {
         AnalysisEntity entity = analysisRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Analysis not found: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Analysis not found: " + id));
 
         return analysisMapper.toViewDto(entity);
     }

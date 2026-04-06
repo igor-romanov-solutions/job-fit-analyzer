@@ -8,8 +8,6 @@ import me.romanov.jobfitanalyzer.entity.AnalysisEntity;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
 
 @Component
 public class AnalysisMapper {
@@ -23,22 +21,12 @@ public class AnalysisMapper {
         entity.setDomain(result.getDomain());
         entity.setVacancyLanguage(result.getVacancyLanguage());
         entity.setRequiredGermanLevel(result.getRequiredGermanLevel());
-        entity.setPrimaryStack(join(result.getPrimaryStack()));
-        entity.setSecondaryStack(join(result.getSecondaryStack()));
-        entity.setNiceToHaveStack(join(result.getNiceToHaveStack()));
-        entity.setGaps(join(result.getGaps()));
-        entity.setJobDescriptionPreview(buildPreview(request.getVacancyText()));
+        entity.setPrimaryStack(MappingUtils.join(result.getPrimaryStack()));
+        entity.setSecondaryStack(MappingUtils.join(result.getSecondaryStack()));
+        entity.setNiceToHaveStack(MappingUtils.join(result.getNiceToHaveStack()));
+        entity.setGaps(MappingUtils.join(result.getGaps()));
+        entity.setJobDescriptionPreview(MappingUtils.buildPreview(request.getVacancyText()));
         return entity;
-    }
-
-    private String join(List<String> list) {
-        return list == null ? null : String.join(", ", list);
-    }
-
-    private String buildPreview(String text) {
-        if (text == null) return null;
-        int max = 300;
-        return text.length() <= max ? text : text.substring(0, max) + "...";
     }
 
     public AnalysisHistoryItemDto toHistoryItemDto(AnalysisEntity entity) {
@@ -64,20 +52,11 @@ public class AnalysisMapper {
                 .domain(entity.getDomain())
                 .vacancyLanguage(entity.getVacancyLanguage())
                 .requiredGermanLevel(entity.getRequiredGermanLevel())
-                .primaryStack(split(entity.getPrimaryStack()))
-                .secondaryStack(split(entity.getSecondaryStack()))
-                .niceToHaveStack(split(entity.getNiceToHaveStack()))
-                .gaps(split(entity.getGaps()))
+                .primaryStack(MappingUtils.split(entity.getPrimaryStack()))
+                .secondaryStack(MappingUtils.split(entity.getSecondaryStack()))
+                .niceToHaveStack(MappingUtils.split(entity.getNiceToHaveStack()))
+                .gaps(MappingUtils.split(entity.getGaps()))
                 .jobDescriptionPreview(entity.getJobDescriptionPreview())
                 .build();
-    }
-
-    private List<String> split(String value) {
-        if (value == null || value.isBlank()) {
-            return List.of();
-        }
-        return Arrays.stream(value.split(","))
-                .map(String::trim)
-                .toList();
     }
 }

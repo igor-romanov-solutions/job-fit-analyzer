@@ -3,7 +3,6 @@ package me.romanov.jobfitanalyzer.controller;
 import me.romanov.jobfitanalyzer.dto.AnalysisRequest;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
 import me.romanov.jobfitanalyzer.service.AnalysisService;
-import me.romanov.jobfitanalyzer.service.AnalysisServiceImpl;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +14,7 @@ public class HomeController {
 
     private final AnalysisService analysisService;
 
-    public HomeController(AnalysisServiceImpl analysisService) {
+    public HomeController(AnalysisService analysisService) {
         this.analysisService = analysisService;
     }
 
