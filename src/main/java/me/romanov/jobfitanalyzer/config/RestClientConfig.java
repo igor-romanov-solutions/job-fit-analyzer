@@ -8,14 +8,9 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    public RestClient restClient(RestClient.Builder builder) {
-        return builder
+    public RestClient restClient() {
+        return RestClient.builder()
                 .baseUrl("https://api.openai.com/v1")
                 .build();
-    }
-
-    @Bean
-    public RestClient.Builder restClientBuilder() {
-        return RestClient.builder();
     }
 }
