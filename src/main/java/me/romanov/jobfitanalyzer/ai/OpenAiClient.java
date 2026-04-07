@@ -1,6 +1,7 @@
 package me.romanov.jobfitanalyzer.ai;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
 import me.romanov.jobfitanalyzer.dto.OpenAiResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OpenAiClient {
 
     private final RestClient restClient;
@@ -32,7 +34,7 @@ public class OpenAiClient {
                 "response_format", Map.of("type", "json_object")
         );
 
-        System.out.println("Sending request to OpenAI: " + request);
+        log.info("Sending request to OpenAI: {}", request);
 
         String rawResponse = restClient.post()
                 .uri("/chat/completions")
@@ -52,7 +54,7 @@ public class OpenAiClient {
             contentJson = contentJson.replace("```json", "").replace("```", "").trim();
             return mapper.readValue(contentJson, AnalysisResult.class);
         } catch (Exception e) {
-            System.err.println("Failed to parse OpenAI response: {}" + rawResponse + e);
+            log.error("Failed to parse OpenAI response: {}", rawResponse, e);
             return AnalysisResult.fallback();
         }
     }
