@@ -29,6 +29,7 @@
     <properties>
         <java.version>24</java.version>
         <sonar.projectKey>igor-romanov-solutions_job-fit-analyzer</sonar.projectKey>
+        <sonar.projectName>job-fit-analyzer</sonar.projectName>
         <sonar.organization>igor-romanov-solutions</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.jacoco.xmlReportPaths>
