@@ -27,7 +27,7 @@
         <url/>
     </scm>
     <properties>
-        <java.version>24</java.version>
+        <java.version>21</java.version>
         <sonar.projectKey>igor-romanov-solutions_job-fit-analyzer</sonar.projectKey>
         <sonar.projectName>job-fit-analyzer</sonar.projectName>
         <sonar.organization>igor-romanov-solutions</sonar.organization>
