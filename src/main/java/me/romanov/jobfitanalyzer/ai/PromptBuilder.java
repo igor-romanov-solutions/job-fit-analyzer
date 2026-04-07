@@ -1,6 +1,9 @@
 package me.romanov.jobfitanalyzer.ai;
 
-public class PromptBuilder {
+public final class PromptBuilder {
+
+    private PromptBuilder() {}
+
     public static String buildSystemPrompt() {
         return """
                 You are an information extraction and evaluation system.
