@@ -2,6 +2,7 @@ package me.romanov.jobfitanalyzer.service;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.romanov.jobfitanalyzer.ai.OpenAiClient;
 import me.romanov.jobfitanalyzer.ai.PromptBuilder;
 import me.romanov.jobfitanalyzer.dto.AnalysisHistoryItemDto;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AnalysisServiceImpl implements AnalysisService {
 
     @Value("${openai.api.key}")
@@ -31,7 +33,7 @@ public class AnalysisServiceImpl implements AnalysisService {
 
     @PostConstruct
     public void test() {
-        System.out.println("API Key loaded: " + apiKey);
+        log.info("API Key loaded: {}", apiKey);
     }
 
     @Override
