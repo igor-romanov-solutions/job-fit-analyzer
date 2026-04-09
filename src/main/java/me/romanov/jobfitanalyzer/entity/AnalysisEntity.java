@@ -18,6 +18,7 @@ public class AnalysisEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     private String roleType;
