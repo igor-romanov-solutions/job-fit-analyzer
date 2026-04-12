@@ -93,11 +93,20 @@ jdbc:h2:file:./data/jobfitdb
 
 ## Environment Variables
 
-The application uses environment variables for external service configuration.
+### Local development
 
-| Variable       | Description            | Required |
-| -------------- | ---------------------- | -------- |
-| OPENAI_API_KEY | API key for OpenAI API | Yes      |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| OPENAI_API_KEY | API key for OpenAI API | Required for OpenAI integration |
+
+### Docker Compose
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| OPENAI_API_KEY | API key for OpenAI API | Required |
+| SPRING_DATASOURCE_URL | PostgreSQL JDBC URL | Required for Docker |
+| SPRING_DATASOURCE_USERNAME | Database username | Required for Docker |
+| SPRING_DATASOURCE_PASSWORD | Database password | Required for Docker |
 
 ### How to set environment variable
 
@@ -117,6 +126,29 @@ After setting the variable, restart the application.
 
 If the variable is not set, OpenAI integration will not work.
 
+
+---
+
+## Docker / Docker Compose
+
+The project includes a Docker Compose setup for running the Spring Boot application with PostgreSQL.
+
+### Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+This will start:
+
+- `app` — Spring Boot application
+- `postgres` — PostgreSQL database
+
+### URLs
+
+- Application: `http://localhost:8080`
+- PostgreSQL: `localhost:5432`
+
 ---
 
 ## Roadmap
@@ -125,11 +157,11 @@ If the variable is not set, OpenAI integration will not work.
 * [x] Basic Thymeleaf UI
 * [x] H2 + JPA persistence
 * [x] Analysis history and details
-* [ ] Unit tests
-* [ ] Spring MVC tests
-* [ ] GitHub Actions CI
-* [ ] SonarCloud
-* [ ] PostgreSQL
-* [ ] Flyway migrations
-* [ ] Docker / Docker Compose
+* [x] Unit tests
+* [x] Spring MVC tests
+* [x] GitHub Actions CI
+* [x] SonarCloud
+* [x] PostgreSQL
+* [x] Flyway migrations
+* [x] Docker / Docker Compose
 * [ ] AWS deployment
