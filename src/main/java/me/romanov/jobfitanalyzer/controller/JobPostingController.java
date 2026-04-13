@@ -4,8 +4,11 @@ import jakarta.validation.Valid;
 import me.romanov.jobfitanalyzer.domain.JobPosting;
 import me.romanov.jobfitanalyzer.domain.JobPostingStatus;
 import me.romanov.jobfitanalyzer.dto.CreateJobPostingRequest;
+import me.romanov.jobfitanalyzer.dto.JobMetadata;
+import me.romanov.jobfitanalyzer.dto.MetadataFetchRequest;
 import me.romanov.jobfitanalyzer.dto.UpdateJobPostingRequest;
 import me.romanov.jobfitanalyzer.service.JobPostingService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -101,5 +104,13 @@ public class JobPostingController {
 
         jobPostingService.update(id, request);
         return "redirect:/jobs/" + id;
+    }
+
+    @PostMapping("/metadata-fetch")
+    @ResponseBody
+    public ResponseEntity<JobMetadata> fetchMetadata(@RequestBody MetadataFetchRequest request) {
+        return jobPostingService.fetchMetadata(request.sourceUrl())
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 }

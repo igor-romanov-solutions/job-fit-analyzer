@@ -9,7 +9,7 @@
 </head>
 <body class="bg-light">
 
-<div th:replace="fragments/navbar :: navbar"></div>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container py-4">
     <div class="mb-3">
@@ -38,7 +38,7 @@
                                    class="form-control"
                                    th:field="*{sourceUrl}"
                                    placeholder="https://...">
-                            <button type="button" class="btn btn-outline-primary">
+                            <button type="button" class="btn btn-outline-primary" onclick="fetchMetadata()">
                                 Auto-fill from URL
                             </button>
                         </div>
@@ -106,6 +106,52 @@
         </div>
     </div>
 </div>
+<script>
+    async function fetchMetadata() {
+        const sourceUrl = document.getElementById('sourceUrl').value.trim();
 
+        if (!sourceUrl) {
+            alert('Please enter Source URL first.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/jobs/metadata-fetch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sourceUrl })
+            });
+
+            if (!response.ok) {
+                alert('Could not fetch metadata.');
+                return;
+            }
+
+            /** @type {{companyName?: string, jobTitle?: string, location?: string, description?: string}} */
+            const data = await response.json();
+
+            if (data.companyName) {
+                document.getElementById('companyName').value = data.companyName;
+            }
+
+            if (data.jobTitle) {
+                document.getElementById('jobTitle').value = data.jobTitle;
+            }
+
+            if (data.location) {
+                document.getElementById('location').value = data.location;
+            }
+
+            if (data.description) {
+                document.getElementById('description').value = data.description;
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error while fetching metadata.');
+        }
+    }
+</script>
 </body>
 </html>
