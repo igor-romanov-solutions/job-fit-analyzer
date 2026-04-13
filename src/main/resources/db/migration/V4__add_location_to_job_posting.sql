@@ -1,0 +1,2 @@
+ALTER TABLE job_postings
+ADD COLUMN IF NOT EXISTS location VARCHAR(255);

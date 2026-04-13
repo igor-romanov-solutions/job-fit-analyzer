@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create Job</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="bg-light">
+
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<div class="container py-4">
+    <div class="mb-3">
+        <div class="text-uppercase small fw-semibold mb-2" style="color: #0972D3; letter-spacing: 0.08em;">
+            Job postings
+        </div>
+        <h1 class="display-6 fw-bold mb-2 app-title">
+            Add job posting
+        </h1>
+        <p class="text-secondary mb-0 app-subtitle">
+            Save a vacancy manually for later analysis and review.
+        </p>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form th:action="@{/jobs}" th:object="${jobForm}" method="post">
+                <div class="row g-4">
+                    <div class="col-12">
+                        <label for="sourceUrl" class="form-label small fw-semibold text-uppercase text-secondary mb-2">
+                            Source URL
+                        </label>
+                        <div class="input-group">
+                            <input id="sourceUrl"
+                                   type="text"
+                                   class="form-control"
+                                   th:field="*{sourceUrl}"
+                                   placeholder="https://...">
+                            <button type="button" class="btn btn-outline-primary">
+                                Auto-fill from URL
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="companyName" class="form-label small fw-semibold text-uppercase text-secondary mb-2">
+                            Company
+                        </label>
+                        <input id="companyName"
+                               type="text"
+                               class="form-control"
+                               th:field="*{companyName}"
+                               placeholder="UBS">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="jobTitle" class="form-label small fw-semibold text-uppercase text-secondary mb-2">
+                            Job title
+                        </label>
+                        <input id="jobTitle"
+                               type="text"
+                               class="form-control"
+                               th:field="*{jobTitle}"
+                               placeholder="Senior Java Developer">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="location" class="form-label small fw-semibold text-uppercase text-secondary mb-2">
+                            Location
+                        </label>
+                        <input id="location"
+                               type="text"
+                               class="form-control"
+                               th:field="*{location}"
+                               placeholder="Zurich, Switzerland">
+                    </div>
+
+                    <div class="col-12">
+                        <label for="description" class="form-label small fw-semibold text-uppercase text-secondary mb-2">
+                            Description
+                        </label>
+                        <textarea id="description"
+                                  class="form-control"
+                                  th:field="*{description}"
+                                  rows="10"
+                                  placeholder="Paste job description here"></textarea>
+                        <div class="text-danger small mt-2"
+                             th:if="${#fields.hasErrors('description')}"
+                             th:errors="*{description}"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                Save
+                            </button>
+                            <a class="btn btn-outline-secondary" th:href="@{/jobs}">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
