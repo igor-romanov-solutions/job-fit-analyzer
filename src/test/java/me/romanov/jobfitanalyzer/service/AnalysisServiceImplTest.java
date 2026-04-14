@@ -2,24 +2,21 @@ package me.romanov.jobfitanalyzer.service;
 
 import me.romanov.jobfitanalyzer.ai.OpenAiClient;
 import me.romanov.jobfitanalyzer.ai.PromptBuilder;
-import me.romanov.jobfitanalyzer.dto.AnalysisHistoryItemDto;
+import me.romanov.jobfitanalyzer.domain.JobAnalysis;
+import me.romanov.jobfitanalyzer.domain.JobPosting;
 import me.romanov.jobfitanalyzer.dto.AnalysisRequest;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
-import me.romanov.jobfitanalyzer.dto.AnalysisViewDto;
-import me.romanov.jobfitanalyzer.entity.AnalysisEntity;
 import me.romanov.jobfitanalyzer.mapper.AnalysisMapper;
-import me.romanov.jobfitanalyzer.repository.AnalysisRepository;
+import me.romanov.jobfitanalyzer.repository.JobAnalysisRepository;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
 
 @ExtendWith(MockitoExtension.class)
 class AnalysisServiceImplTest {
@@ -28,149 +25,196 @@ class AnalysisServiceImplTest {
     private OpenAiClient openAiClient;
 
     @Mock
-    private AnalysisRepository analysisRepository;
+    private JobAnalysisRepository jobAnalysisRepository;
 
     @Mock
     private AnalysisMapper analysisMapper;
 
-    @Test
-    void analyzeAndSaveShouldCallOpenAiMapAndSaveEntity() {
-        AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, analysisRepository, analysisMapper);
+    @Nested
+    class AnalyzeTests {
 
-        AnalysisRequest request = new AnalysisRequest();
-        request.setCandidateProfile("Java developer with Spring");
-        request.setVacancyText("Senior Java Backend role");
+        @Test
+        void shouldCallOpenAiWithBuiltPromptsAndReturnResult() {
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
 
-        AnalysisResult expectedResult = new AnalysisResult();
-        expectedResult.setRoleType("BACKEND");
+            AnalysisRequest request = new AnalysisRequest();
+            request.setCandidateProfile("Java developer with Spring");
+            request.setJobPostingDescription("Senior Java Backend role");
 
-        AnalysisEntity mappedEntity = new AnalysisEntity();
+            AnalysisResult expectedResult = new AnalysisResult();
+            expectedResult.setRoleType("BACKEND");
 
-        String expectedSystemPrompt = PromptBuilder.buildSystemPrompt();
-        String expectedUserPrompt = PromptBuilder.buildUserPrompt(
-                request.getCandidateProfile(),
-                request.getVacancyText()
-        );
+            String expectedSystemPrompt = PromptBuilder.buildSystemPrompt();
+            String expectedUserPrompt = PromptBuilder.buildUserPrompt(
+                    request.getCandidateProfile(),
+                    request.getJobPostingDescription()
+            );
 
-        when(openAiClient.callOpenAi(expectedSystemPrompt, expectedUserPrompt)).thenReturn(expectedResult);
-        when(analysisMapper.toEntity(request, expectedResult)).thenReturn(mappedEntity);
+            when(openAiClient.callOpenAi(expectedSystemPrompt, expectedUserPrompt))
+                    .thenReturn(expectedResult);
 
-        AnalysisResult actualResult = service.analyzeAndSave(request);
+            AnalysisResult actualResult = service.analyze(request);
 
-        assertSame(expectedResult, actualResult);
+            assertSame(expectedResult, actualResult);
 
-        verify(openAiClient).callOpenAi(expectedSystemPrompt, expectedUserPrompt);
-        verify(analysisMapper).toEntity(request, expectedResult);
-        verify(analysisRepository).save(mappedEntity);
-        verifyNoMoreInteractions(openAiClient, analysisMapper, analysisRepository);
+            verify(openAiClient).callOpenAi(expectedSystemPrompt, expectedUserPrompt);
+            verifyNoInteractions(jobAnalysisRepository, analysisMapper);
+        }
+
+        @Test
+        void shouldPropagateExceptionWhenOpenAiFails() {
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
+
+            AnalysisRequest request = new AnalysisRequest();
+            request.setCandidateProfile("Java developer");
+            request.setJobPostingDescription("Backend role");
+
+            String systemPrompt = PromptBuilder.buildSystemPrompt();
+            String userPrompt = PromptBuilder.buildUserPrompt(
+                    request.getCandidateProfile(),
+                    request.getJobPostingDescription()
+            );
+
+            when(openAiClient.callOpenAi(systemPrompt, userPrompt))
+                    .thenThrow(new RuntimeException("OpenAI error"));
+
+            RuntimeException exception = assertThrows(
+                    RuntimeException.class,
+                    () -> service.analyze(request)
+            );
+
+            assertEquals("OpenAI error", exception.getMessage());
+
+            verify(openAiClient).callOpenAi(systemPrompt, userPrompt);
+            verifyNoInteractions(jobAnalysisRepository, analysisMapper);
+        }
     }
 
-    @Test
-    void getHistoryShouldMapEntitiesToDtos() {
-        AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, analysisRepository, analysisMapper);
+    @Nested
+    class AnalyzeAndSaveTests {
 
-        AnalysisEntity first = new AnalysisEntity();
-        AnalysisEntity second = new AnalysisEntity();
+        @Test
+        void shouldAnalyzeMapAndSaveEntity() {
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
 
-        AnalysisHistoryItemDto firstDto = new AnalysisHistoryItemDto();
-        AnalysisHistoryItemDto secondDto = new AnalysisHistoryItemDto();
+            AnalysisRequest request = new AnalysisRequest();
+            request.setCandidateProfile("Java developer with Spring");
+            request.setJobPostingDescription("Senior Java Backend role");
 
-        when(analysisRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(first, second));
-        when(analysisMapper.toHistoryItemDto(first)).thenReturn(firstDto);
-        when(analysisMapper.toHistoryItemDto(second)).thenReturn(secondDto);
+            JobPosting jobPosting = new JobPosting(
+                    "https://example.com",
+                    "Company",
+                    "Title",
+                    "Location",
+                    "Description"
+            );
 
-        List<AnalysisHistoryItemDto> result = service.getHistory();
+            AnalysisResult analysisResult = new AnalysisResult();
+            analysisResult.setRoleType("BACKEND");
 
-        assertEquals(2, result.size());
-        assertEquals(firstDto, result.get(0));
-        assertEquals(secondDto, result.get(1));
+            JobAnalysis mappedEntity = new JobAnalysis();
 
-        verify(analysisRepository).findAllByOrderByCreatedAtDesc();
-        verify(analysisMapper).toHistoryItemDto(first);
-        verify(analysisMapper).toHistoryItemDto(second);
-        verifyNoMoreInteractions(analysisRepository, analysisMapper);
-    }
+            String expectedSystemPrompt = PromptBuilder.buildSystemPrompt();
+            String expectedUserPrompt = PromptBuilder.buildUserPrompt(
+                    request.getCandidateProfile(),
+                    request.getJobPostingDescription()
+            );
 
-    @Test
-    void getAnalysisShouldReturnMappedDtoWhenEntityExists() {
-        AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, analysisRepository, analysisMapper);
+            when(openAiClient.callOpenAi(expectedSystemPrompt, expectedUserPrompt))
+                    .thenReturn(analysisResult);
+            when(analysisMapper.toEntity(jobPosting, analysisResult))
+                    .thenReturn(mappedEntity);
+            when(jobAnalysisRepository.save(mappedEntity))
+                    .thenReturn(mappedEntity);
 
-        Long id = 42L;
-        AnalysisEntity entity = new AnalysisEntity();
-        AnalysisViewDto dto = new AnalysisViewDto();
+            JobAnalysis actualResult = service.analyzeAndSave(jobPosting, request);
 
-        when(analysisRepository.findById(id)).thenReturn(Optional.of(entity));
-        when(analysisMapper.toViewDto(entity)).thenReturn(dto);
+            assertSame(mappedEntity, actualResult);
 
-        AnalysisViewDto result = service.getAnalysis(id);
+            verify(openAiClient).callOpenAi(expectedSystemPrompt, expectedUserPrompt);
+            verify(analysisMapper).toEntity(jobPosting, analysisResult);
+            verify(jobAnalysisRepository).save(mappedEntity);
+            verifyNoMoreInteractions(openAiClient, analysisMapper, jobAnalysisRepository);
+        }
 
-        assertSame(dto, result);
+        @Test
+        void shouldPropagateExceptionWhenOpenAiFails() {
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
 
-        verify(analysisRepository).findById(id);
-        verify(analysisMapper).toViewDto(entity);
-        verifyNoMoreInteractions(analysisRepository, analysisMapper);
-    }
+            AnalysisRequest request = new AnalysisRequest();
+            request.setCandidateProfile("Java developer");
+            request.setJobPostingDescription("Backend role");
 
-    @Test
-    void getAnalysisShouldThrowNotFoundWhenEntityMissing() {
-        AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, analysisRepository, analysisMapper);
+            JobPosting jobPosting = new JobPosting(
+                    "https://example.com",
+                    "Company",
+                    "Title",
+                    "Location",
+                    "Description"
+            );
 
-        Long id = 42L;
-        when(analysisRepository.findById(id)).thenReturn(Optional.empty());
+            String systemPrompt = PromptBuilder.buildSystemPrompt();
+            String userPrompt = PromptBuilder.buildUserPrompt(
+                    request.getCandidateProfile(),
+                    request.getJobPostingDescription()
+            );
 
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> service.getAnalysis(id)
-        );
+            when(openAiClient.callOpenAi(systemPrompt, userPrompt))
+                    .thenThrow(new RuntimeException("OpenAI error"));
 
-        assertEquals(404, exception.getStatusCode().value());
-        assertNotNull(exception.getReason());
-        assertTrue(exception.getReason().contains("Analysis not found: 42"));
+            RuntimeException exception = assertThrows(
+                    RuntimeException.class,
+                    () -> service.analyzeAndSave(jobPosting, request)
+            );
 
-        verify(analysisRepository).findById(id);
-        verifyNoInteractions(analysisMapper);
-    }
+            assertEquals("OpenAI error", exception.getMessage());
 
-    @Test
-    void analyzeAndSaveShouldPropagateExceptionWhenOpenAiFails() {
-        AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, analysisRepository, analysisMapper);
+            verify(openAiClient).callOpenAi(systemPrompt, userPrompt);
+            verifyNoInteractions(analysisMapper, jobAnalysisRepository);
+        }
 
-        AnalysisRequest request = new AnalysisRequest();
-        request.setCandidateProfile("Java developer");
-        request.setVacancyText("Backend role");
+        @Test
+        void shouldPropagateExceptionWhenSavingFails() {
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
 
-        String systemPrompt = PromptBuilder.buildSystemPrompt();
-        String userPrompt = PromptBuilder.buildUserPrompt(
-                request.getCandidateProfile(),
-                request.getVacancyText()
-        );
+            AnalysisRequest request = new AnalysisRequest();
+            request.setCandidateProfile("Java developer");
+            request.setJobPostingDescription("Backend role");
 
-        when(openAiClient.callOpenAi(systemPrompt, userPrompt))
-                .thenThrow(new RuntimeException("OpenAI error"));
+            JobPosting jobPosting = new JobPosting(
+                    "https://example.com",
+                    "Company",
+                    "Title",
+                    "Location",
+                    "Description"
+            );
 
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> service.analyzeAndSave(request)
-        );
+            AnalysisResult analysisResult = new AnalysisResult();
+            JobAnalysis mappedEntity = new JobAnalysis();
 
-        assertEquals("OpenAI error", exception.getMessage());
+            String expectedSystemPrompt = PromptBuilder.buildSystemPrompt();
+            String expectedUserPrompt = PromptBuilder.buildUserPrompt(
+                    request.getCandidateProfile(),
+                    request.getJobPostingDescription()
+            );
 
-        verify(openAiClient).callOpenAi(systemPrompt, userPrompt);
-        verifyNoInteractions(analysisMapper, analysisRepository);
-    }
+            when(openAiClient.callOpenAi(expectedSystemPrompt, expectedUserPrompt))
+                    .thenReturn(analysisResult);
+            when(analysisMapper.toEntity(jobPosting, analysisResult))
+                    .thenReturn(mappedEntity);
+            when(jobAnalysisRepository.save(mappedEntity))
+                    .thenThrow(new RuntimeException("DB error"));
 
-    @Test
-    void getHistoryShouldReturnEmptyListWhenNoAnalysesExist() {
-        AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, analysisRepository, analysisMapper);
+            RuntimeException exception = assertThrows(
+                    RuntimeException.class,
+                    () -> service.analyzeAndSave(jobPosting, request)
+            );
 
-        when(analysisRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of());
+            assertEquals("DB error", exception.getMessage());
 
-        List<AnalysisHistoryItemDto> result = service.getHistory();
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-
-        verify(analysisRepository).findAllByOrderByCreatedAtDesc();
-        verifyNoInteractions(analysisMapper);
+            verify(openAiClient).callOpenAi(expectedSystemPrompt, expectedUserPrompt);
+            verify(analysisMapper).toEntity(jobPosting, analysisResult);
+            verify(jobAnalysisRepository).save(mappedEntity);
+        }
     }
 }

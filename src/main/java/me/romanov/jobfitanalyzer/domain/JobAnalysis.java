@@ -1,4 +1,4 @@
-package me.romanov.jobfitanalyzer.entity;
+package me.romanov.jobfitanalyzer.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,12 +11,16 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "analyses")
-public class AnalysisEntity {
+@Table(name = "job_analyses")
+public class JobAnalysis {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "job_posting_id", nullable = false)
+    private JobPosting jobPosting;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -39,7 +43,4 @@ public class AnalysisEntity {
 
     @Column(length = 3000)
     private String gaps;
-
-    @Column(length = 500)
-    private String jobDescriptionPreview;
 }

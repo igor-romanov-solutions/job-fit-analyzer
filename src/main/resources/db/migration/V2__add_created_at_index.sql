@@ -1,1 +1,0 @@
-CREATE INDEX idx_analyses_created_at ON analyses (created_at DESC);
