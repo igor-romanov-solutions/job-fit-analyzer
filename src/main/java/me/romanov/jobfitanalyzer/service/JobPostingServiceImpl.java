@@ -95,9 +95,13 @@ public class JobPostingServiceImpl implements JobPostingService {
 
         List<JobPosting> jobs = jobPostingRepository.findAll(spec);
 
+        Comparator<JobPosting> createdAtComparator =
+                Comparator.comparing(JobPosting::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed();
+
         return jobs.stream()
                 .filter(job -> matchesLatestAnalysis(job, filterRequest))
-                .sorted(Comparator.comparing(JobPosting::getCreatedAt).reversed())
+                .sorted(createdAtComparator)
                 .toList();
     }
 
@@ -126,9 +130,7 @@ public class JobPostingServiceImpl implements JobPostingService {
 
         List<JobPosting> jobs = findByFilter(filterRequest);
         jobs.forEach(jobPosting -> jobPosting.updateStatus(status));
-
     }
-
 
     private String normalize(String value) {
         return trimToNull(value);

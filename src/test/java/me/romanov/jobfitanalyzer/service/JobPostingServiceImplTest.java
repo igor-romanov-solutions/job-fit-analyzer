@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class JobPostingServiceTest {
+class JobPostingServiceImplTest {
 
     private JobPostingRepository jobPostingRepository;
     private JobPostingServiceImpl jobPostingService;
@@ -410,6 +410,82 @@ class JobPostingServiceTest {
 
             assertThat(result).hasSize(1);
             assertThat(result.getFirst()).isSameAs(job);
+
+            verify(jobPostingRepository).findAll(ArgumentMatchers.<Specification<JobPosting>>any());
+            verifyNoMoreInteractions(jobPostingRepository, jobMetadataFetcher);
+        }
+    }
+
+    @Nested
+    class UpdateStatusByFilterTests {
+
+        @Test
+        void shouldUpdateStatusForFilteredJobsBasedOnLatestAnalysis() {
+            JobPosting job = new JobPosting("https://a.com", "A", "A", "A", "A");
+            job.setId(1L);
+            job.setStatus(JobPostingStatus.NEW);
+
+            JobAnalysis olderAnalysis = new JobAnalysis();
+            olderAnalysis.setJobPosting(job);
+            olderAnalysis.setJavaRelevance("HIGH");
+            olderAnalysis.setRequiredGermanLevel("C1");
+            olderAnalysis.setCreatedAt(java.time.LocalDateTime.now().minusDays(1));
+
+            JobAnalysis latestAnalysis = new JobAnalysis();
+            latestAnalysis.setJobPosting(job);
+            latestAnalysis.setJavaRelevance("LOW");
+            latestAnalysis.setRequiredGermanLevel("B2");
+            latestAnalysis.setCreatedAt(java.time.LocalDateTime.now());
+
+            job.getAnalyses().add(olderAnalysis);
+            job.getAnalyses().add(latestAnalysis);
+
+            when(jobPostingRepository.findAll(ArgumentMatchers.<Specification<JobPosting>>any()))
+                    .thenReturn(List.of(job));
+
+            JobPostingFilterRequest filter = new JobPostingFilterRequest();
+            filter.setJavaRelevance("LOW");
+            filter.setRequiredGermanLevel("B2");
+
+            jobPostingService.updateStatusByFilter(filter, JobPostingStatus.ANALYZED);
+
+            assertEquals(JobPostingStatus.ANALYZED, job.getStatus());
+
+            verify(jobPostingRepository).findAll(ArgumentMatchers.<Specification<JobPosting>>any());
+            verifyNoMoreInteractions(jobPostingRepository, jobMetadataFetcher);
+        }
+
+        @Test
+        void shouldNotUpdateJobsWhenLatestAnalysisDoesNotMatch() {
+            JobPosting job = new JobPosting("https://a.com", "A", "A", "A", "A");
+            job.setId(1L);
+            job.setStatus(JobPostingStatus.NEW);
+
+            JobAnalysis olderAnalysis = new JobAnalysis();
+            olderAnalysis.setJobPosting(job);
+            olderAnalysis.setJavaRelevance("LOW");
+            olderAnalysis.setRequiredGermanLevel("B2");
+            olderAnalysis.setCreatedAt(java.time.LocalDateTime.now().minusDays(1));
+
+            JobAnalysis latestAnalysis = new JobAnalysis();
+            latestAnalysis.setJobPosting(job);
+            latestAnalysis.setJavaRelevance("HIGH");
+            latestAnalysis.setRequiredGermanLevel("C1");
+            latestAnalysis.setCreatedAt(java.time.LocalDateTime.now());
+
+            job.getAnalyses().add(olderAnalysis);
+            job.getAnalyses().add(latestAnalysis);
+
+            when(jobPostingRepository.findAll(ArgumentMatchers.<Specification<JobPosting>>any()))
+                    .thenReturn(List.of(job));
+
+            JobPostingFilterRequest filter = new JobPostingFilterRequest();
+            filter.setJavaRelevance("LOW");
+            filter.setRequiredGermanLevel("B2");
+
+            jobPostingService.updateStatusByFilter(filter, JobPostingStatus.ANALYZED);
+
+            assertEquals(JobPostingStatus.NEW, job.getStatus());
 
             verify(jobPostingRepository).findAll(ArgumentMatchers.<Specification<JobPosting>>any());
             verifyNoMoreInteractions(jobPostingRepository, jobMetadataFetcher);
