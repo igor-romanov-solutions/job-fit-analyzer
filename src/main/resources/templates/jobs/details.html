@@ -174,7 +174,8 @@
 
                 <div class="col-12 pt-1">
                     <div class="d-flex flex-wrap gap-2">
-                        <a class="btn btn-primary" th:href="@{/jobs/{id}/edit(id=${job.id})}">
+                        <a class="btn btn-primary"
+                           th:href="@{/jobs/{id}/edit(id=${job.id}, returnUrl=${'/jobs/' + job.id})}">
                             Edit
                         </a>
                         <a class="btn btn-outline-primary" th:href="@{/jobs/{id}/analyze(id=${job.id})}">
