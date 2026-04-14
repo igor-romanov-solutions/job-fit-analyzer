@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -82,6 +83,25 @@ public class JobPostingController {
         );
 
         jobPostingService.create(request);
+        return REDIRECT_TO_JOBS;
+    }
+
+    @PostMapping("/bulk-status")
+    public String bulkUpdateStatus(@ModelAttribute("filter") JobPostingFilterRequest filter,
+                                   @RequestParam("targetStatus") JobPostingStatus targetStatus,
+                                   RedirectAttributes redirectAttributes) {
+        jobPostingService.updateStatusByFilter(filter, targetStatus);
+
+        if (filter.getStatus() != null) {
+            redirectAttributes.addAttribute("status", filter.getStatus());
+        }
+        if (filter.getJavaRelevance() != null && !filter.getJavaRelevance().isBlank()) {
+            redirectAttributes.addAttribute("javaRelevance", filter.getJavaRelevance());
+        }
+        if (filter.getRequiredGermanLevel() != null && !filter.getRequiredGermanLevel().isBlank()) {
+            redirectAttributes.addAttribute("requiredGermanLevel", filter.getRequiredGermanLevel());
+        }
+
         return REDIRECT_TO_JOBS;
     }
 
