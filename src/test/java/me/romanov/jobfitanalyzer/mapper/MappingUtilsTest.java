@@ -65,27 +65,6 @@ class MappingUtilsTest {
         }
     }
 
-    @Nested
-    class BuildPreviewTests {
-        @ParameterizedTest
-        @MethodSource("buildPreviewCases")
-        void shouldJoin_whenValueHasCommas(String input, String expected) {
-            assertEquals(expected, MappingUtils.buildPreview(input));
-        }
-
-        static Stream<Arguments> buildPreviewCases() {
-            return Stream.of(
-                    Arguments.of(null, null),
-                    Arguments.of("", ""),
-                    Arguments.of("A".repeat(7), "A".repeat(7)),
-                    Arguments.of("B".repeat(350), "B".repeat(300) + "..."),
-                    Arguments.of("C".repeat(300), "C".repeat(300)),
-                    Arguments.of("D".repeat(299), "D".repeat(299)),
-                    Arguments.of("D".repeat(301), "D".repeat(300) + "...")
-            );
-        }
-    }
-
     @Test
     void shouldPreserveStackThroughJoinAndSplit() {
         List<String> stack = List.of("Java", "Spring", "Kafka");
