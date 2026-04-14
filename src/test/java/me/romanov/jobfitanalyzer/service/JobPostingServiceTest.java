@@ -1,16 +1,20 @@
 package me.romanov.jobfitanalyzer.service;
 
+import me.romanov.jobfitanalyzer.domain.JobAnalysis;
 import me.romanov.jobfitanalyzer.domain.JobPosting;
 import me.romanov.jobfitanalyzer.domain.JobPostingNotFoundException;
 import me.romanov.jobfitanalyzer.domain.JobPostingStatus;
 import me.romanov.jobfitanalyzer.dto.CreateJobPostingRequest;
 import me.romanov.jobfitanalyzer.dto.JobMetadata;
+import me.romanov.jobfitanalyzer.dto.JobPostingFilterRequest;
 import me.romanov.jobfitanalyzer.dto.UpdateJobPostingRequest;
 import me.romanov.jobfitanalyzer.repository.JobPostingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,14 +26,14 @@ import static org.mockito.Mockito.*;
 class JobPostingServiceTest {
 
     private JobPostingRepository jobPostingRepository;
-    private JobPostingService jobPostingService;
+    private JobPostingServiceImpl jobPostingService;
     private JobMetadataFetcher jobMetadataFetcher;
 
     @BeforeEach
     void setUp() {
         jobPostingRepository = mock(JobPostingRepository.class);
         jobMetadataFetcher = mock(JobMetadataFetcher.class);
-        jobPostingService = new JobPostingService(jobPostingRepository, jobMetadataFetcher);
+        jobPostingService = new JobPostingServiceImpl(jobPostingRepository, jobMetadataFetcher);
     }
 
     @Nested
@@ -381,4 +385,35 @@ class JobPostingServiceTest {
             verifyNoMoreInteractions(jobPostingRepository, jobMetadataFetcher);
         }
     }
+
+    @Nested
+    class FindByFilterTests {
+
+        @Test
+        void shouldReturnJobsByStatusAndJavaRelevance() {
+            JobPosting job = new JobPosting("https://example.com", "Company", "Title", "Zurich", "Description");
+            job.setStatus(JobPostingStatus.NEW);
+
+            JobAnalysis analysis = new JobAnalysis();
+            analysis.setJobPosting(job);
+            analysis.setJavaRelevance("LOW");
+            job.getAnalyses().add(analysis);
+
+            when(jobPostingRepository.findAll(ArgumentMatchers.<Specification<JobPosting>>any()))
+                    .thenReturn(List.of(job));
+
+            JobPostingFilterRequest filter = new JobPostingFilterRequest();
+            filter.setStatus(JobPostingStatus.NEW);
+            filter.setJavaRelevance("LOW");
+
+            List<JobPosting> result = jobPostingService.findByFilter(filter);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst()).isSameAs(job);
+
+            verify(jobPostingRepository).findAll(ArgumentMatchers.<Specification<JobPosting>>any());
+            verifyNoMoreInteractions(jobPostingRepository, jobMetadataFetcher);
+        }
+    }
+
 }

@@ -24,14 +24,18 @@ public class JobPostingController {
     private static final String JOB_ATTRIBUTE = "job";
     private static final String JOBS_ATTRIBUTE = "jobs";
     private static final String JOB_FORM_ATTRIBUTE = "jobForm";
-    private static final String SELECTED_STATUS_ATTRIBUTE = "selectedStatus";
-
     private static final String ANALYSIS_ATTRIBUTE = "analysis";
     private static final String JOB_ANALYSIS_FORM_ATTRIBUTE = "jobAnalysisForm";
 
     private static final String JOBS_CREATE_TEMPLATE = "jobs/create";
     private static final String JOBS_EDIT_TEMPLATE = "jobs/edit";
     private static final String JOBS_ANALYZE_TEMPLATE = "jobs/analyze";
+
+    private static final String REDIRECT_TO_JOBS = "redirect:/jobs";
+    private static final String REDIRECT_TO_JOB_DETAILS = "redirect:/jobs/";
+
+    private static final String RETURN_TO_LIST = "list";
+    private static final String RETURN_TO_DETAILS = "details";
 
     private final JobPostingService jobPostingService;
     private final AnalysisService analysisService;
@@ -45,20 +49,14 @@ public class JobPostingController {
 
     @GetMapping("/")
     public String root() {
-        return "redirect:/jobs";
+        return REDIRECT_TO_JOBS;
     }
 
     @GetMapping
-    public String listJobs(@RequestParam(value = "status", required = false) JobPostingStatus status,
-                           Model model) {
-        List<JobPosting> jobs = (status == null)
-                ? jobPostingService.findAll()
-                : jobPostingService.findByStatus(status);
-
+    public String listJobs(@ModelAttribute("filter") JobPostingFilterRequest filter, Model model) {
+        List<JobPosting> jobs = jobPostingService.findByFilter(filter);
         model.addAttribute(JOBS_ATTRIBUTE, jobs);
-        model.addAttribute(SELECTED_STATUS_ATTRIBUTE, status);
         model.addAttribute(ALL_STATUSES_ATTRIBUTE, JobPostingStatus.values());
-
         return "jobs/list";
     }
 
@@ -84,7 +82,7 @@ public class JobPostingController {
         );
 
         jobPostingService.create(request);
-        return "redirect:/jobs";
+        return REDIRECT_TO_JOBS;
     }
 
     @GetMapping("/{id}")
@@ -100,7 +98,9 @@ public class JobPostingController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editJob(@PathVariable Long id, Model model) {
+    public String editJob(@PathVariable Long id,
+                          @RequestParam(value = "returnTo", required = false, defaultValue = "details") String returnTo,
+                          Model model) {
         JobPosting job = jobPostingService.findById(id);
 
         UpdateJobPostingForm jobForm = new UpdateJobPostingForm(
@@ -115,6 +115,7 @@ public class JobPostingController {
         model.addAttribute(JOB_ATTRIBUTE, job);
         model.addAttribute(JOB_FORM_ATTRIBUTE, jobForm);
         model.addAttribute(ALL_STATUSES_ATTRIBUTE, JobPostingStatus.values());
+        model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
 
         return JOBS_EDIT_TEMPLATE;
     }
@@ -123,11 +124,15 @@ public class JobPostingController {
     public String updateJob(@PathVariable Long id,
                             @Valid @ModelAttribute("jobForm") UpdateJobPostingForm form,
                             BindingResult bindingResult,
-                            Model model) {
+                            Model model,
+                            @RequestParam(value = "returnTo", required = false, defaultValue = "details") String returnTo) {
+        String safeReturnTo = sanitizeReturnTo(returnTo);
+
         if (bindingResult.hasErrors()) {
             JobPosting job = jobPostingService.findById(id);
             model.addAttribute(JOB_ATTRIBUTE, job);
             model.addAttribute(ALL_STATUSES_ATTRIBUTE, JobPostingStatus.values());
+            model.addAttribute("returnTo", safeReturnTo);
             return JOBS_EDIT_TEMPLATE;
         }
 
@@ -141,7 +146,18 @@ public class JobPostingController {
         );
 
         jobPostingService.update(id, request);
-        return "redirect:/jobs/" + id;
+        if (RETURN_TO_DETAILS.equals(safeReturnTo)) {
+            return REDIRECT_TO_JOB_DETAILS + id;
+        } else {
+            return REDIRECT_TO_JOBS;
+        }
+    }
+
+    private String sanitizeReturnTo(String returnTo) {
+        if (RETURN_TO_LIST.equals(returnTo) || RETURN_TO_DETAILS.equals(returnTo)) {
+            return returnTo;
+        }
+        return RETURN_TO_DETAILS;
     }
 
     @PostMapping("/metadata-fetch")

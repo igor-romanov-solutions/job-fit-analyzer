@@ -10,6 +10,7 @@ import me.romanov.jobfitanalyzer.service.AnalysisService;
 import me.romanov.jobfitanalyzer.service.JobPostingService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -19,6 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -62,17 +65,23 @@ class JobPostingControllerTest {
             JobPosting job1 = buildJobPosting(1L, "A", JobPostingStatus.NEW);
             JobPosting job2 = buildJobPosting(2L, "B", JobPostingStatus.ANALYZED);
 
-            when(jobPostingService.findAll()).thenReturn(List.of(job2, job1));
+            when(jobPostingService.findByFilter(any(JobPostingFilterRequest.class)))
+                    .thenReturn(List.of(job2, job1));
 
             mockMvc.perform(get("/jobs"))
                     .andExpect(status().isOk())
                     .andExpect(view().name("jobs/list"))
+                    .andExpect(model().attributeExists("filter"))
                     .andExpect(model().attributeExists("jobs"))
                     .andExpect(model().attributeExists("allStatuses"))
-                    .andExpect(model().attribute("jobs", List.of(job2, job1)))
-                    .andExpect(model().attribute("selectedStatus", (Object) null));
+                    .andExpect(model().attribute("jobs", List.of(job2, job1)));
 
-            verify(jobPostingService).findAll();
+            ArgumentCaptor<JobPostingFilterRequest> captor =
+                    ArgumentCaptor.forClass(JobPostingFilterRequest.class);
+            verify(jobPostingService).findByFilter(captor.capture());
+            assertNull(captor.getValue().getStatus());
+            assertNull(captor.getValue().getJavaRelevance());
+
             verifyNoMoreInteractions(jobPostingService);
         }
 
@@ -80,18 +89,23 @@ class JobPostingControllerTest {
         void shouldReturnJobsListPageWithStatusFilter() throws Exception {
             JobPosting job = buildJobPosting(1L, "A", JobPostingStatus.NEW);
 
-            when(jobPostingService.findByStatus(JobPostingStatus.NEW)).thenReturn(List.of(job));
+            when(jobPostingService.findByFilter(any(JobPostingFilterRequest.class)))
+                    .thenReturn(List.of(job));
 
             mockMvc.perform(get("/jobs").param("status", "NEW"))
                     .andExpect(status().isOk())
                     .andExpect(view().name("jobs/list"))
+                    .andExpect(model().attributeExists("filter"))
                     .andExpect(model().attributeExists("jobs"))
-                    .andExpect(model().attributeExists("selectedStatus"))
                     .andExpect(model().attributeExists("allStatuses"))
-                    .andExpect(model().attribute("jobs", List.of(job)))
-                    .andExpect(model().attribute("selectedStatus", JobPostingStatus.NEW));
+                    .andExpect(model().attribute("jobs", List.of(job)));
 
-            verify(jobPostingService).findByStatus(JobPostingStatus.NEW);
+            ArgumentCaptor<JobPostingFilterRequest> captor =
+                    ArgumentCaptor.forClass(JobPostingFilterRequest.class);
+            verify(jobPostingService).findByFilter(captor.capture());
+            assertEquals(JobPostingStatus.NEW, captor.getValue().getStatus());
+            assertNull(captor.getValue().getJavaRelevance());
+
             verifyNoMoreInteractions(jobPostingService);
         }
     }
@@ -198,14 +212,15 @@ class JobPostingControllerTest {
                     .andExpect(view().name("jobs/edit"))
                     .andExpect(model().attribute("job", job))
                     .andExpect(model().attributeExists("jobForm"))
-                    .andExpect(model().attributeExists("allStatuses"));
+                    .andExpect(model().attributeExists("allStatuses"))
+                    .andExpect(model().attribute("returnTo", "details"));
 
             verify(jobPostingService).findById(id);
             verifyNoMoreInteractions(jobPostingService);
         }
 
         @Test
-        void shouldUpdateJobAndRedirect() throws Exception {
+        void shouldUpdateJobAndRedirectToDetailsByDefault() throws Exception {
             Long id = 1L;
 
             mockMvc.perform(post("/jobs/{id}", id)
@@ -217,6 +232,25 @@ class JobPostingControllerTest {
                             .param("status", "ANALYZED"))
                     .andExpect(status().is3xxRedirection())
                     .andExpect(redirectedUrl("/jobs/" + id));
+
+            verify(jobPostingService).update(eq(id), any(UpdateJobPostingRequest.class));
+            verifyNoMoreInteractions(jobPostingService);
+        }
+
+        @Test
+        void shouldUpdateJobAndRedirectToListWhenRequested() throws Exception {
+            Long id = 1L;
+
+            mockMvc.perform(post("/jobs/{id}", id)
+                            .param("sourceUrl", "https://example.com")
+                            .param("companyName", "UBS")
+                            .param("jobTitle", "Java Dev")
+                            .param("location", "Zurich")
+                            .param("description", "Updated description")
+                            .param("status", "ANALYZED")
+                            .param("returnTo", "list"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/jobs"));
 
             verify(jobPostingService).update(eq(id), any(UpdateJobPostingRequest.class));
             verifyNoMoreInteractions(jobPostingService);
@@ -235,10 +269,12 @@ class JobPostingControllerTest {
                             .param("jobTitle", "Java Dev")
                             .param("location", "Zurich")
                             .param("description", "   ")
-                            .param("status", "ANALYZED"))
+                            .param("status", "ANALYZED")
+                            .param("returnTo", "list"))
                     .andExpect(status().isOk())
                     .andExpect(view().name("jobs/edit"))
                     .andExpect(model().attribute("job", job))
+                    .andExpect(model().attribute("returnTo", "list"))
                     .andExpect(model().attributeExists("allStatuses"))
                     .andExpect(model().hasErrors());
 

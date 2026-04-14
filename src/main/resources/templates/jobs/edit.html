@@ -27,6 +27,7 @@
     <div class="card shadow-sm border-0">
         <div class="card-body p-4">
             <form th:action="@{/jobs/{id}(id=${job.id})}" th:object="${jobForm}" method="post">
+                <input type="hidden" name="returnTo" th:value="${returnTo}">
                 <div class="row g-4">
                     <div class="col-md-6">
                         <label for="status" class="form-label small fw-semibold text-uppercase text-secondary mb-2">
@@ -106,9 +107,9 @@
                             <button type="submit" class="btn btn-primary">
                                 Save changes
                             </button>
-                            <a class="btn btn-outline-secondary" th:href="@{/jobs/{id}(id=${job.id})}">
+                            <button type="submit" class="btn btn-outline-secondary">
                                 Cancel
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>

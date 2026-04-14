@@ -7,10 +7,12 @@ import me.romanov.jobfitanalyzer.ai.OpenAiClient;
 import me.romanov.jobfitanalyzer.ai.PromptBuilder;
 import me.romanov.jobfitanalyzer.domain.JobAnalysis;
 import me.romanov.jobfitanalyzer.domain.JobPosting;
+import me.romanov.jobfitanalyzer.domain.JobPostingStatus;
 import me.romanov.jobfitanalyzer.dto.AnalysisRequest;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
 import me.romanov.jobfitanalyzer.mapper.AnalysisMapper;
 import me.romanov.jobfitanalyzer.repository.JobAnalysisRepository;
+import me.romanov.jobfitanalyzer.repository.JobPostingRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,7 @@ public class AnalysisServiceImpl implements AnalysisService {
 
     private final OpenAiClient openAiClient;
     private final JobAnalysisRepository jobAnalysisRepository;
+    private final JobPostingRepository jobPostingRepository;
     private final AnalysisMapper analysisMapper;
 
     @PostConstruct
@@ -43,6 +46,8 @@ public class AnalysisServiceImpl implements AnalysisService {
         AnalysisResult analysisResult = analyze(request);
         JobAnalysis entity = analysisMapper.toEntity(jobPosting, analysisResult);
         jobAnalysisRepository.save(entity);
+        jobPosting.setStatus(JobPostingStatus.ANALYZED);
+        jobPostingRepository.save(jobPosting);
         return entity;
     }
 }
