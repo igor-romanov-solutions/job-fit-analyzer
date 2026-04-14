@@ -9,14 +9,14 @@
 </head>
 <body class="bg-light">
 
-<div th:replace="fragments/navbar :: navbar"></div>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container py-4">
-    <div class="mb-3">
-        <div class="text-uppercase small fw-semibold mb-2" style="color: #0972D3; letter-spacing: 0.08em;">
+    <div class="mb-2">
+        <div class="text-uppercase small fw-semibold mb-1" style="color: #0972D3; letter-spacing: 0.08em;">
             Job postings
         </div>
-        <h1 class="display-6 fw-bold mb-2 app-title">
+        <h1 class="display-6 fw-bold mb-1 app-title">
             Job details
         </h1>
         <p class="text-secondary mb-0 app-subtitle">
@@ -25,8 +25,8 @@
     </div>
 
     <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-            <div class="row g-4">
+        <div class="card-body p-3 p-md-4">
+            <div class="row g-3">
                 <div class="col-md-6">
                     <div class="text-uppercase text-secondary small fw-semibold mb-1">Status</div>
                     <div>
@@ -61,7 +61,7 @@
                 </div>
 
                 <div class="col-12">
-                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Description</div>
+                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Description</div>
 
                     <button id="descriptionToggle"
                             class="btn btn-link p-0 text-decoration-none d-inline-flex align-items-center gap-2"
@@ -83,17 +83,102 @@
                 </div>
 
                 <div class="col-12">
-                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Analysis</div>
-                    <div class="bg-light border rounded-3 p-3" style="white-space: pre-wrap;"
-                         th:text="${job.analysisSummary != null ? job.analysisSummary : 'No analysis yet.'}">
-                        No analysis yet.
+                    <div class="text-uppercase text-secondary small fw-semibold mb-2 mt-1">
+                        Analysis
+                    </div>
+
+                    <div class="bg-body-tertiary border rounded-4 p-3 p-md-4">
+                        <div th:if="${analysis == null}" class="text-secondary">
+                            No analysis yet.
+                        </div>
+
+                        <div th:if="${analysis != null}">
+                            <div class="row g-3">
+                                <div th:if="${analysis.roleType != null}" class="col-md-6">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Role focus</div>
+                                    <div th:text="${analysis.roleType}">Platform</div>
+                                </div>
+
+                                <div th:if="${analysis.javaRelevance != null}" class="col-md-6">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Java relevance</div>
+                                    <div th:text="${analysis.javaRelevance}">High</div>
+                                </div>
+
+                                <div th:if="${analysis.seniorityLevel != null}" class="col-md-6">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Seniority level</div>
+                                    <div th:text="${analysis.seniorityLevel}">Senior</div>
+                                </div>
+
+                                <div th:if="${analysis.domain != null}" class="col-md-6">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Domain</div>
+                                    <div th:text="${analysis.domain}">Insurance</div>
+                                </div>
+
+                                <div th:if="${analysis.vacancyLanguage != null}" class="col-md-6">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-1">Vacancy language</div>
+                                    <div th:text="${analysis.vacancyLanguage}">German</div>
+                                </div>
+
+                                <div th:if="${analysis.requiredGermanLevel != null}" class="col-md-6">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-1">German required</div>
+                                    <span class="badge text-bg-info" th:text="${analysis.requiredGermanLevel}">B2</span>
+                                </div>
+
+                                <div th:if="${analysis.primaryStack != null and !analysis.primaryStack.isEmpty()}" class="col-12">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Primary stack</div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span th:each="tech : ${#strings.listSplit(analysis.primaryStack, ',')}"
+                                              class="badge rounded-pill text-bg-primary"
+                                              th:text="${#strings.trim(tech)}">
+                                            Java
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div th:if="${analysis.secondaryStack != null and !analysis.secondaryStack.isEmpty()}" class="col-12">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Secondary stack</div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span th:each="tech : ${#strings.listSplit(analysis.secondaryStack, ',')}"
+                                              class="badge rounded-pill text-bg-secondary"
+                                              th:text="${#strings.trim(tech)}">
+                                            CI/CD
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div th:if="${analysis.niceToHaveStack != null and !analysis.niceToHaveStack.isEmpty()}" class="col-12">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Nice to have</div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span th:each="tech : ${#strings.listSplit(analysis.niceToHaveStack, ',')}"
+                                              class="badge rounded-pill text-bg-light border text-dark"
+                                              th:text="${#strings.trim(tech)}">
+                                            Kafka
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div th:if="${analysis.gaps != null and !analysis.gaps.isEmpty()}" class="col-12">
+                                    <div class="text-uppercase text-secondary small fw-semibold mb-2">Potential concerns</div>
+                                    <div class="bg-white border rounded-3 p-3">
+                                        <ul class="mb-0 ps-3">
+                                            <li th:each="gap : ${analysis.gaps.split(',\\s*')}" th:text="${gap}">
+                                                Example concern
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-12">
-                    <div class="d-flex flex-wrap gap-2 pt-2">
+                <div class="col-12 pt-1">
+                    <div class="d-flex flex-wrap gap-2">
                         <a class="btn btn-primary" th:href="@{/jobs/{id}/edit(id=${job.id})}">
                             Edit
+                        </a>
+                        <a class="btn btn-outline-primary" th:href="@{/jobs/{id}/analyze(id=${job.id})}">
+                            Analyze
                         </a>
                         <a class="btn btn-outline-secondary" th:href="@{/jobs}">
                             Back to Jobs

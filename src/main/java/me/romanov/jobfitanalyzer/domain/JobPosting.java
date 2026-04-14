@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Getter
@@ -38,23 +40,14 @@ public class JobPosting {
     @Column(nullable = false, length = 50)
     private JobPostingStatus status;
 
-    @Column(name = "analysis_summary", columnDefinition = "TEXT")
-    private String analysisSummary;
-
-    @Column(name = "analysis_score")
-    private Integer analysisScore;
-
-    @Column(name = "analysis_raw_json", columnDefinition = "TEXT")
-    private String analysisRawJson;
-
-    @Column(name = "analyzed_at")
-    private LocalDateTime analyzedAt;
-
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "jobPosting")
+    private List<JobAnalysis> analyses = new ArrayList<>();
 
     public JobPosting(String sourceUrl, String companyName, String jobTitle, String location, String description) {
         this.sourceUrl = sourceUrl;
@@ -83,13 +76,5 @@ public class JobPosting {
 
     public void updateStatus(JobPostingStatus status) {
         this.status = Objects.requireNonNull(status, "status must not be null");
-    }
-
-    public void applyAnalysisResult(String summary, Integer score, String rawJson) {
-        this.analysisSummary = summary;
-        this.analysisScore = score;
-        this.analysisRawJson = rawJson;
-        this.analyzedAt = LocalDateTime.now();
-        this.status = JobPostingStatus.ANALYZED;
     }
 }

@@ -1,10 +1,8 @@
 package me.romanov.jobfitanalyzer.mapper;
 
-import me.romanov.jobfitanalyzer.dto.AnalysisHistoryItemDto;
-import me.romanov.jobfitanalyzer.dto.AnalysisRequest;
+import me.romanov.jobfitanalyzer.domain.JobAnalysis;
+import me.romanov.jobfitanalyzer.domain.JobPosting;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
-import me.romanov.jobfitanalyzer.dto.AnalysisViewDto;
-import me.romanov.jobfitanalyzer.entity.AnalysisEntity;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,14 +20,16 @@ class AnalysisMapperTest {
     class ToEntityTests {
         @Test
         void shouldMapAllFieldsToEntity() {
-            AnalysisRequest request = buildAnalysisRequest();
             AnalysisResult result = buildAnalysisResult();
+            JobPosting jobPosting = new JobPosting("https://example.com", "Company", "Title", "Location", "Description");
 
             LocalDateTime before = LocalDateTime.now();
-            AnalysisEntity entity = mapper.toEntity(request, result);
+            JobAnalysis entity = mapper.toEntity(jobPosting, result);
             LocalDateTime after = LocalDateTime.now();
 
             assertNotNull(entity);
+
+            assertSame(jobPosting, entity.getJobPosting());
 
             assertNotNull(entity.getCreatedAt());
             assertFalse(entity.getCreatedAt().isBefore(before));
@@ -46,17 +46,6 @@ class AnalysisMapperTest {
             assertEquals(MappingUtils.join(result.getSecondaryStack()), entity.getSecondaryStack());
             assertEquals(MappingUtils.join(result.getNiceToHaveStack()), entity.getNiceToHaveStack());
             assertEquals(MappingUtils.join(result.getGaps()), entity.getGaps());
-
-            assertEquals(
-                    MappingUtils.buildPreview(request.getVacancyText()),
-                    entity.getJobDescriptionPreview()
-            );
-        }
-
-        private static @NonNull AnalysisRequest buildAnalysisRequest() {
-            AnalysisRequest request = new AnalysisRequest();
-            request.setVacancyText("Senior Java Developer role with Spring, Kafka and PostgreSQL");
-            return request;
         }
 
         private static @NonNull AnalysisResult buildAnalysisResult() {
@@ -76,14 +65,13 @@ class AnalysisMapperTest {
 
         @Test
         void shouldMapFallbackResultCorrectly() {
-            AnalysisRequest request = new AnalysisRequest();
-            request.setVacancyText("Some vacancy text");
-
             AnalysisResult fallback = AnalysisResult.fallback();
+            JobPosting jobPosting = new JobPosting("https://example.com", "Company", "Title", "Location", "Description");
 
-            AnalysisEntity entity = mapper.toEntity(request, fallback);
+            JobAnalysis entity = mapper.toEntity(jobPosting, fallback);
 
             assertNotNull(entity);
+            assertSame(jobPosting, entity.getJobPosting());
             assertNotNull(entity.getCreatedAt());
 
             assertEquals("Unknown", entity.getRoleType());
@@ -100,80 +88,6 @@ class AnalysisMapperTest {
                     MappingUtils.join(List.of("Failed to analyze vacancy. Please try again.")),
                     entity.getGaps()
             );
-
-            assertEquals(
-                    MappingUtils.buildPreview(request.getVacancyText()),
-                    entity.getJobDescriptionPreview()
-            );
-        }
-
-        @Test
-        void shouldBuildPreviewFromLongVacancyText() {
-
-            AnalysisRequest request = new AnalysisRequest();
-            String longText = "Java ".repeat(500); // long text
-            request.setVacancyText(longText);
-
-            AnalysisResult result = AnalysisResult.fallback(); // можно reuse
-
-            AnalysisEntity entity = mapper.toEntity(request, result);
-
-            assertNotNull(entity);
-
-            String expectedPreview = MappingUtils.buildPreview(longText);
-
-            assertEquals(expectedPreview, entity.getJobDescriptionPreview());
-            assertNotEquals(longText, entity.getJobDescriptionPreview());
         }
     }
-
-    @Nested
-    class ToHistoryItemDtoTests {
-        @Test
-        void shouldMapEntityToHistoryItemDto() {
-            AnalysisEntity entity = buildAnalysisEntity();
-
-            AnalysisHistoryItemDto dto = mapper.toHistoryItemDto(entity);
-
-            assertEquals(entity.getId(), dto.getId());
-            assertEquals(entity.getRoleType(), dto.getRoleType());
-            assertEquals(entity.getJobDescriptionPreview(), dto.getJobDescriptionPreview());
-        }
-    }
-
-    private static @NonNull AnalysisEntity buildAnalysisEntity() {
-        AnalysisEntity entity = new AnalysisEntity();
-        entity.setId(1L);
-        entity.setCreatedAt(LocalDateTime.now());
-        entity.setRoleType("BACKEND");
-        entity.setSeniorityLevel("SENIOR");
-        entity.setDomain("FINTECH");
-        entity.setVacancyLanguage("EN");
-        entity.setJavaRelevance("HIGH");
-        entity.setJobDescriptionPreview("preview");
-        return entity;
-    }
-
-    @Nested
-    class ToViewDtoTests {
-        @Test
-        void shouldMapEntityToViewDto() {
-            AnalysisEntity entity = buildAnalysisEntity();
-
-            AnalysisViewDto dto = mapper.toViewDto(entity);
-
-            assertEquals(entity.getId(), dto.getId());
-            assertEquals(entity.getRoleType(), dto.getRoleType());
-
-            assertEquals(
-                    MappingUtils.split(entity.getPrimaryStack()),
-                    dto.getPrimaryStack()
-            );
-            assertEquals(
-                    MappingUtils.split(entity.getSecondaryStack()),
-                    dto.getSecondaryStack()
-            );
-        }
-    }
-
 }

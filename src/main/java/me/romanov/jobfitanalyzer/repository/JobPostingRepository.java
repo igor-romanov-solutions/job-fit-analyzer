@@ -12,5 +12,4 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
 
     List<JobPosting> findByStatusOrderByCreatedAtDesc(JobPostingStatus status);
 
-    boolean existsBySourceUrl(String sourceUrl);
 }
