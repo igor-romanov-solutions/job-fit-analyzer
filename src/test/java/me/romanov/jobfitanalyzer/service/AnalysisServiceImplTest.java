@@ -8,6 +8,7 @@ import me.romanov.jobfitanalyzer.dto.AnalysisRequest;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
 import me.romanov.jobfitanalyzer.mapper.AnalysisMapper;
 import me.romanov.jobfitanalyzer.repository.JobAnalysisRepository;
+import me.romanov.jobfitanalyzer.repository.JobPostingRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,9 @@ class AnalysisServiceImplTest {
     private JobAnalysisRepository jobAnalysisRepository;
 
     @Mock
+    private JobPostingRepository jobPostingRepository;
+
+    @Mock
     private AnalysisMapper analysisMapper;
 
     @Nested
@@ -35,7 +39,7 @@ class AnalysisServiceImplTest {
 
         @Test
         void shouldCallOpenAiWithBuiltPromptsAndReturnResult() {
-            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, jobPostingRepository, analysisMapper);
 
             AnalysisRequest request = new AnalysisRequest();
             request.setCandidateProfile("Java developer with Spring");
@@ -63,7 +67,7 @@ class AnalysisServiceImplTest {
 
         @Test
         void shouldPropagateExceptionWhenOpenAiFails() {
-            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, jobPostingRepository, analysisMapper);
 
             AnalysisRequest request = new AnalysisRequest();
             request.setCandidateProfile("Java developer");
@@ -95,7 +99,7 @@ class AnalysisServiceImplTest {
 
         @Test
         void shouldAnalyzeMapAndSaveEntity() {
-            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, jobPostingRepository, analysisMapper);
 
             AnalysisRequest request = new AnalysisRequest();
             request.setCandidateProfile("Java developer with Spring");
@@ -139,7 +143,7 @@ class AnalysisServiceImplTest {
 
         @Test
         void shouldPropagateExceptionWhenOpenAiFails() {
-            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, jobPostingRepository, analysisMapper);
 
             AnalysisRequest request = new AnalysisRequest();
             request.setCandidateProfile("Java developer");
@@ -175,7 +179,7 @@ class AnalysisServiceImplTest {
 
         @Test
         void shouldPropagateExceptionWhenSavingFails() {
-            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, analysisMapper);
+            AnalysisServiceImpl service = new AnalysisServiceImpl(openAiClient, jobAnalysisRepository, jobPostingRepository, analysisMapper);
 
             AnalysisRequest request = new AnalysisRequest();
             request.setCandidateProfile("Java developer");
