@@ -212,14 +212,15 @@ class JobPostingControllerTest {
                     .andExpect(view().name("jobs/edit"))
                     .andExpect(model().attribute("job", job))
                     .andExpect(model().attributeExists("jobForm"))
-                    .andExpect(model().attributeExists("allStatuses"));
+                    .andExpect(model().attributeExists("allStatuses"))
+                    .andExpect(model().attribute("returnTo", "details"));
 
             verify(jobPostingService).findById(id);
             verifyNoMoreInteractions(jobPostingService);
         }
 
         @Test
-        void shouldUpdateJobAndRedirect() throws Exception {
+        void shouldUpdateJobAndRedirectToDetailsByDefault() throws Exception {
             Long id = 1L;
 
             mockMvc.perform(post("/jobs/{id}", id)
@@ -229,6 +230,25 @@ class JobPostingControllerTest {
                             .param("location", "Zurich")
                             .param("description", "Updated description")
                             .param("status", "ANALYZED"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/jobs/" + id));
+
+            verify(jobPostingService).update(eq(id), any(UpdateJobPostingRequest.class));
+            verifyNoMoreInteractions(jobPostingService);
+        }
+
+        @Test
+        void shouldUpdateJobAndRedirectToListWhenRequested() throws Exception {
+            Long id = 1L;
+
+            mockMvc.perform(post("/jobs/{id}", id)
+                            .param("sourceUrl", "https://example.com")
+                            .param("companyName", "UBS")
+                            .param("jobTitle", "Java Dev")
+                            .param("location", "Zurich")
+                            .param("description", "Updated description")
+                            .param("status", "ANALYZED")
+                            .param("returnTo", "list"))
                     .andExpect(status().is3xxRedirection())
                     .andExpect(redirectedUrl("/jobs"));
 
@@ -249,10 +269,12 @@ class JobPostingControllerTest {
                             .param("jobTitle", "Java Dev")
                             .param("location", "Zurich")
                             .param("description", "   ")
-                            .param("status", "ANALYZED"))
+                            .param("status", "ANALYZED")
+                            .param("returnTo", "list"))
                     .andExpect(status().isOk())
                     .andExpect(view().name("jobs/edit"))
                     .andExpect(model().attribute("job", job))
+                    .andExpect(model().attribute("returnTo", "list"))
                     .andExpect(model().attributeExists("allStatuses"))
                     .andExpect(model().hasErrors());
 

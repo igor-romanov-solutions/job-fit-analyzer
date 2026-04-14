@@ -113,7 +113,7 @@
                         <td class="text-end">
                             <a class="btn btn-sm btn-outline-primary" th:href="@{/jobs/{id}(id=${job.id})}">View</a>
                             <a class="btn btn-sm btn-outline-secondary"
-                               th:href="@{/jobs/{id}/edit(id=${job.id}, returnUrl='/jobs')}">
+                               th:href="@{/jobs/{id}/edit(id=${job.id}, returnTo='list')}">
                                 Edit
                             </a>
                         </td>
