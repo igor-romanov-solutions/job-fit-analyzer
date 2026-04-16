@@ -68,6 +68,4 @@ class OpenAiClientTest {
         verify(restClient).post();
         verify(requestBodyUriSpec).uri("/chat/completions");
     }
-
-
 }
