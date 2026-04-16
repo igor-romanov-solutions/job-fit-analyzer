@@ -383,20 +383,21 @@ class JobPostingControllerTest {
         }
 
         @Test
-        void shouldReturnAnalyzePageWithErrorWhenAnalysisFails() throws Exception {
+        void shouldReturnServiceUnavailableWhenAnalysisFails() throws Exception {
             Long id = 1L;
             JobPosting job = buildJobPosting(id, "A", JobPostingStatus.NEW);
 
             when(jobPostingService.findById(id)).thenReturn(job);
             when(analysisService.analyzeAndSave(eq(job), any(AnalysisRequest.class)))
-                    .thenThrow(new RuntimeException("OpenAI error"));
+                    .thenThrow(new me.romanov.jobfitanalyzer.domain.ExternalServiceException("OpenAI error"));
 
             mockMvc.perform(post("/jobs/{id}/analyze", id)
                             .param("cvText", "Java developer with Spring"))
-                    .andExpect(status().isOk())
-                    .andExpect(view().name("jobs/analyze"))
-                    .andExpect(model().attribute("job", job))
-                    .andExpect(model().attribute("error", "Analysis failed: OpenAI error"));
+                    .andExpect(status().isServiceUnavailable())
+                    .andExpect(view().name("errors/service-unavailable"))
+                    .andExpect(model().attribute("errorCode", "EXTERNAL_SERVICE_ERROR"))
+                    .andExpect(model().attribute("message",
+                            "External service is temporarily unavailable. Please try again later."));
 
             verify(jobPostingService).findById(id);
             verify(analysisService).analyzeAndSave(eq(job), any(AnalysisRequest.class));
