@@ -21,4 +21,6 @@ public interface JobPostingService {
     JobPosting findById(Long id);
 
     List<JobPosting> findByFilter(JobPostingFilterRequest filterRequest);
+
+    void updateStatusByFilter(JobPostingFilterRequest filterRequest, JobPostingStatus status);
 }

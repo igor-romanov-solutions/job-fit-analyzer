@@ -108,6 +108,24 @@ class JobPostingControllerTest {
 
             verifyNoMoreInteractions(jobPostingService);
         }
+
+        @Test
+        void shouldBulkUpdateStatusForFilteredJobs() throws Exception {
+            mockMvc.perform(post("/jobs/bulk-status")
+                            .param("status", "NEW")
+                            .param("javaRelevance", "LOW")
+                            .param("targetStatus", "ANALYZED"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/jobs?status=NEW&javaRelevance=LOW"));
+
+            ArgumentCaptor<JobPostingFilterRequest> filterCaptor =
+                    ArgumentCaptor.forClass(JobPostingFilterRequest.class);
+            verify(jobPostingService).updateStatusByFilter(filterCaptor.capture(), eq(JobPostingStatus.ANALYZED));
+            assertEquals(JobPostingStatus.NEW, filterCaptor.getValue().getStatus());
+            assertEquals("LOW", filterCaptor.getValue().getJavaRelevance());
+
+            verifyNoMoreInteractions(jobPostingService);
+        }
     }
 
     @Nested

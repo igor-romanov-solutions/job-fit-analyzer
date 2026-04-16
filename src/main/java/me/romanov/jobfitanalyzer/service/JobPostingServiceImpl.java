@@ -1,5 +1,6 @@
 package me.romanov.jobfitanalyzer.service;
 
+import me.romanov.jobfitanalyzer.domain.JobAnalysis;
 import me.romanov.jobfitanalyzer.domain.JobPosting;
 import me.romanov.jobfitanalyzer.domain.JobPostingNotFoundException;
 import me.romanov.jobfitanalyzer.domain.JobPostingStatus;
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,25 +93,44 @@ public class JobPostingServiceImpl implements JobPostingService {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), filterRequest.getStatus()));
         }
 
-        if (filterRequest.getJavaRelevance() != null && !filterRequest.getJavaRelevance().isBlank()) {
-            spec = spec.and((root, query, cb) -> {
-                var analysisJoin = root.join("analyses");
-                return cb.equal(analysisJoin.get("javaRelevance"), filterRequest.getJavaRelevance());
-            });
-        }
+        List<JobPosting> jobs = jobPostingRepository.findAll(spec);
 
-        if (filterRequest.getRequiredGermanLevel() != null && !filterRequest.getRequiredGermanLevel().isBlank()) {
-            spec = spec.and((root, query, cb) -> {
-                var analysisJoin = root.join("analyses");
-                return cb.equal(analysisJoin.get("requiredGermanLevel"), filterRequest.getRequiredGermanLevel());
-            });
-        }
+        Comparator<JobPosting> createdAtComparator =
+                Comparator.comparing(JobPosting::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed();
 
-        return jobPostingRepository.findAll(spec).stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+        return jobs.stream()
+                .filter(job -> matchesLatestAnalysis(job, filterRequest))
+                .sorted(createdAtComparator)
                 .toList();
     }
 
+    private boolean matchesLatestAnalysis(JobPosting job, JobPostingFilterRequest filterRequest) {
+        JobAnalysis latestAnalysis = job.getAnalyses().stream()
+                .max(Comparator.comparing(JobAnalysis::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElse(null);
+
+        boolean javaRelevanceMatches = filterRequest.getJavaRelevance() == null
+                || filterRequest.getJavaRelevance().isBlank()
+                || (latestAnalysis != null
+                && filterRequest.getJavaRelevance().equals(latestAnalysis.getJavaRelevance()));
+
+        boolean germanLevelMatches = filterRequest.getRequiredGermanLevel() == null
+                || filterRequest.getRequiredGermanLevel().isBlank()
+                || (latestAnalysis != null
+                && filterRequest.getRequiredGermanLevel().equals(latestAnalysis.getRequiredGermanLevel()));
+
+        return javaRelevanceMatches && germanLevelMatches;
+    }
+
+    @Override
+    public void updateStatusByFilter(JobPostingFilterRequest filterRequest, JobPostingStatus status) {
+        Objects.requireNonNull(filterRequest, "filterRequest must not be null");
+        Objects.requireNonNull(status, "status must not be null");
+
+        List<JobPosting> jobs = findByFilter(filterRequest);
+        jobs.forEach(jobPosting -> jobPosting.updateStatus(status));
+    }
 
     private String normalize(String value) {
         return trimToNull(value);
