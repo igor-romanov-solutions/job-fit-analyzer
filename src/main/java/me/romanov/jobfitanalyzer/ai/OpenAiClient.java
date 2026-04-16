@@ -2,9 +2,11 @@ package me.romanov.jobfitanalyzer.ai;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.romanov.jobfitanalyzer.config.OpenAiProperties;
+import me.romanov.jobfitanalyzer.domain.ExternalServiceException;
 import me.romanov.jobfitanalyzer.dto.AnalysisResult;
 import me.romanov.jobfitanalyzer.dto.OpenAiResponse;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
@@ -17,15 +19,16 @@ import java.util.Map;
 @Slf4j
 public class OpenAiClient {
 
-    private final RestClient restClient;
+    private static final String MODEL = "gpt-4o-mini";
 
-    @Value("${openai.api.key}")
-    private String apiKey;
+    private final RestClient restClient;
+    private final ObjectMapper objectMapper;
+    private final OpenAiProperties openAiProperties;
 
     public AnalysisResult callOpenAi(String systemPrompt, String userPrompt) {
 
         Map<String, Object> request = Map.of(
-                "model", "gpt-4o-mini",
+                "model", MODEL,
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
                         Map.of("role", "user", "content", userPrompt)
@@ -34,28 +37,56 @@ public class OpenAiClient {
                 "response_format", Map.of("type", "json_object")
         );
 
-        log.info("Sending request to OpenAI: {}", request);
+        String correlationId = getCorrelationId();
+        int payloadLength = request.toString().length();
 
-        String rawResponse = restClient.post()
-                .uri("/chat/completions")
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json")
-                .body(request)
-                .retrieve()
-                .body(String.class);
-        return parseOpenAiResponse(rawResponse);
+        log.info("Sending request to OpenAI: model={}, payloadLength={}, correlationId={}",
+                MODEL, payloadLength, correlationId);
+
+        try {
+            String rawResponse = restClient.post()
+                    .uri("/chat/completions")
+                    .header("Authorization", "Bearer " + openAiProperties.apiKey())
+                    .header("Content-Type", "application/json")
+                    .body(request)
+                    .retrieve()
+                    .body(String.class);
+
+            if (rawResponse == null || rawResponse.isBlank()) {
+                throw new ExternalServiceException("OpenAI returned empty response");
+            }
+
+            return parseOpenAiResponse(rawResponse);
+        } catch (Exception ex) {
+            log.error("OpenAI request failed: correlationId={}", correlationId, ex);
+            throw new ExternalServiceException("OpenAI request failed: " + ex.getMessage());
+        }
     }
 
     private AnalysisResult parseOpenAiResponse(String rawResponse) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            OpenAiResponse openAiResponse = mapper.readValue(rawResponse, OpenAiResponse.class);
-            String contentJson = openAiResponse.getChoices().get(0).getMessage().getContent();
+            OpenAiResponse openAiResponse = objectMapper.readValue(rawResponse, OpenAiResponse.class);
+
+            if (openAiResponse.getChoices() == null || openAiResponse.getChoices().isEmpty()) {
+                throw new ExternalServiceException("OpenAI response has no choices");
+            }
+
+            String contentJson = openAiResponse.getChoices().getFirst().getMessage().getContent();
+
+            if (contentJson == null || contentJson.isBlank()) {
+                throw new ExternalServiceException("OpenAI response content is empty");
+            }
+
             contentJson = contentJson.replace("```json", "").replace("```", "").trim();
-            return mapper.readValue(contentJson, AnalysisResult.class);
+            return objectMapper.readValue(contentJson, AnalysisResult.class);
         } catch (Exception e) {
             log.error("Failed to parse OpenAI response: {}", rawResponse, e);
-            return AnalysisResult.fallback();
+            throw new ExternalServiceException("Failed to parse OpenAI response: " + e.getMessage());
         }
+    }
+
+    private String getCorrelationId() {
+        String correlationId = MDC.get("correlationId");
+        return correlationId != null ? correlationId : "n/a";
     }
 }

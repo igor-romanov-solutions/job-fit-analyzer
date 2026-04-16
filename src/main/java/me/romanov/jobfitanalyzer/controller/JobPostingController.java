@@ -211,21 +211,16 @@ public class JobPostingController {
             return JOBS_ANALYZE_TEMPLATE;
         }
 
-        try {
-            AnalysisRequest request = new AnalysisRequest();
-            request.setCandidateProfile(form.getCvText());
-            request.setJobPostingDescription(job.getDescription());
 
-            JobAnalysis jobAnalysis = analysisService.analyzeAndSave(job, request);
+        AnalysisRequest request = new AnalysisRequest();
+        request.setCandidateProfile(form.getCvText());
+        request.setJobPostingDescription(job.getDescription());
 
-            model.addAttribute(JOB_ATTRIBUTE, job);
-            model.addAttribute(ANALYSIS_ATTRIBUTE, jobAnalysis);
+        JobAnalysis jobAnalysis = analysisService.analyzeAndSave(job, request);
 
-            return "jobs/details";
-        } catch (Exception e) {
-            model.addAttribute(JOB_ATTRIBUTE, job);
-            model.addAttribute("error", "Analysis failed: " + e.getMessage());
-            return JOBS_ANALYZE_TEMPLATE;
-        }
+        model.addAttribute(JOB_ATTRIBUTE, job);
+        model.addAttribute(ANALYSIS_ATTRIBUTE, jobAnalysis);
+
+        return "jobs/details";
     }
 }
