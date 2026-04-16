@@ -1,167 +1,152 @@
-# JobFitAnalyzer
+# Job Fit Analyzer
 
-## Description
+Job Fit Analyzer is an AI-powered, LLM-based job fit analysis platform that evaluates job postings against a candidate profile and highlights how well a role matches the target background.
 
-JobFitAnalyzer is a Spring Boot application that analyzes how well a candidate profile matches a job description using an LLM and stores structured analysis results.
+The project was built as a practical backend-oriented MVP to demonstrate production-style Java development, Spring Boot architecture, CI/CD, Dockerization, database persistence, and external API integration.
 
-The application allows users to:
+## Why this project exists
 
-* Submit a candidate profile and job description
-* Analyze the match using an LLM (OpenAI)
-* Store structured analysis results in a database
-* View analysis history
-* View detailed analysis results
+I built this application as part of my job search strategy to showcase the skills and keywords commonly expected for Senior Java / Spring Boot roles, especially in Switzerland and other European markets.
 
----
+The goal was not only to create a functional app but also to demonstrate:
+- clean Spring Boot architecture,
+- persistence with Spring Data JPA,
+- server-side rendered UI with Thymeleaf,
+- integration with external AI services,
+- observability-friendly logging,
+- containerized deployment,
+- automated tests and CI pipeline.
 
-## Tech Stack
+## Key features
 
-* Java 21
-* Spring Boot
-* Spring MVC
-* Spring Data JPA (Hibernate)
-* H2 Database
-* Thymeleaf
-* OpenAI API
-* Maven
-* Lombok
-* Bootstrap
+- Create, update, view, and filter job postings
+- Analyze a job posting against a candidate profile
+- Store analysis results in PostgreSQL
+- Bulk update job status by filter
+- Server-side rendered UI with Thymeleaf
+- Centralized error handling with custom error pages
+- Correlation ID logging for request tracing
+- Docker and Docker Compose support
+- GitHub Actions CI pipeline
+- SonarCloud analysis
+- Unit and MVC tests
 
----
+## Tech stack
 
-## Features
+- Java 21
+- Spring Boot
+- Spring MVC
+- Spring Data JPA
+- Spring Validation
+- Thymeleaf
+- PostgreSQL
+- H2 for tests
+- Flyway
+- Docker
+- Docker Compose
+- GitHub Actions
+- SonarCloud
+- Lombok
+- Maven
 
-* Submit candidate profile and job description
-* Analyze match using LLM
-* Store analysis results in database
-* View analysis history
-* View detailed analysis results
+## Architecture highlights
 
----
+This project follows a layered architecture:
 
-## Architecture
+- **controller** — web layer and UI endpoints
+- **service** — business logic and orchestration
+- **repository** — persistence layer
+- **domain** — entities and domain exceptions
+- **dto** — request/response models
+- **ai** — OpenAI integration client
+- **config** — application configuration and request correlation support
 
-The application follows a layered architecture:
+### Design decisions
+- Centralized exception handling with `@ControllerAdvice`
+- Transactional service layer for consistent persistence
+- Dedicated `OpenAiClient` for external API integration
+- `CorrelationIdFilter` for request tracing across logs
+- `OpenAiProperties` for typed configuration
+- Test coverage for controllers and services
 
-* **Controller layer** – handles HTTP requests and Thymeleaf views
-* **Service layer** – contains business logic and orchestration
-* **Repository layer** – data access via Spring Data JPA
-* **Entity layer** – database model
-* **DTO layer** – request/response/view models
-* **Mapper layer** – converts between DTO and Entity
-* **Client layer** – OpenAI API integration
+## Screenshots
 
-### Application Flow
+_Add screenshots here if available._
 
-Controller → Service → OpenAI Client → Mapper → Repository → Database
+## Run locally
 
----
+### Prerequisites
+- Java 21
+- Maven
+- PostgreSQL (optional if using Docker Compose)
 
-## How to Run
-
-Build the project:
-
-```bash
-mvn clean package
-```
-
-Run the application:
-
-```bash
-java -jar target/jobfitanalyzer-0.0.1-SNAPSHOT.jar
-```
-
-Open in browser:
-
-```
-http://localhost:8080
-```
-
-H2 Console:
-
-```
-http://localhost:8080/h2-console
-```
-
-JDBC URL:
-
-```
-jdbc:h2:file:./data/jobfitdb
-```
-
----
-
-## Environment Variables
-
-### Local development
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| OPENAI_API_KEY | API key for OpenAI API | Required for OpenAI integration |
-
-### Docker Compose
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| OPENAI_API_KEY | API key for OpenAI API | Required |
-| SPRING_DATASOURCE_URL | PostgreSQL JDBC URL | Required for Docker |
-| SPRING_DATASOURCE_USERNAME | Database username | Required for Docker |
-| SPRING_DATASOURCE_PASSWORD | Database password | Required for Docker |
-
-### How to set environment variable
-
-**Mac / Linux:**
+### Run with Maven
 
 ```bash
-export OPENAI_API_KEY=your_api_key_here
+./mvnw spring-boot:run
 ```
 
-**Windows (PowerShell):**
 
-```powershell
-setx OPENAI_API_KEY "your_api_key_here"
+### Run tests
+```bash
+./mvnw test
 ```
 
-After setting the variable, restart the application.
+### Build the project
+```bash
+./mvnw clean package
+```
 
-If the variable is not set, OpenAI integration will not work.
+## Run with Docker
 
+### Build the image
 
----
-
-## Docker / Docker Compose
-
-The project includes a Docker Compose setup for running the Spring Boot application with PostgreSQL.
+```bash
+docker build -t job-fit-analyzer .
+```
 
 ### Run with Docker Compose
-
 ```bash
 docker compose up --build
 ```
 
-This will start:
 
-- `app` — Spring Boot application
-- `postgres` — PostgreSQL database
+The application uses PostgreSQL and requires the OpenAI API key to be provided through environment variables.
 
-### URLs
+## Configuration
 
-- Application: `http://localhost:8080`
-- PostgreSQL: `localhost:5432`
+### Required environment variables
+- `OPENAI_API_KEY` — OpenAI API key
 
----
+### Application profiles
+- `dev`
+- `postgres`
 
-## Roadmap
+## CI/CD
 
-* [x] OpenAI integration
-* [x] Basic Thymeleaf UI
-* [x] H2 + JPA persistence
-* [x] Analysis history and details
-* [x] Unit tests
-* [x] Spring MVC tests
-* [x] GitHub Actions CI
-* [x] SonarCloud
-* [x] PostgreSQL
-* [x] Flyway migrations
-* [x] Docker / Docker Compose
-* [ ] AWS deployment
+The project includes a GitHub Actions workflow that:
+- builds the application with Maven,
+- runs tests,
+- performs SonarCloud analysis,
+- uploads the built JAR artifact.
+
+## Testing
+
+The project includes:
+- service layer unit tests
+- controller MVC tests
+- application context test
+
+## Future improvements
+
+Planned next steps:
+- pagination for the job list
+- better structured logging and metrics
+- cloud deployment
+- authentication and authorization
+- more robust OpenAI error handling
+- richer analytics for job/candidate fit scoring
+
+## License
+
+This project is intended as a personal portfolio and demo project.
