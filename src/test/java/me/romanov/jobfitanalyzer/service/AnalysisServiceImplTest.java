@@ -248,5 +248,55 @@ class AnalysisServiceImplTest {
             verify(jobAnalysisRepository).save(mappedEntity);
             verifyNoMoreInteractions(openAiClient, analysisMapper, jobAnalysisRepository, jobPostingRepository);
         }
+
+        @Test
+        void shouldWrapDataAccessExceptionIntoAnalysisFailedException() {
+            AnalysisServiceImpl service = new AnalysisServiceImpl(
+                    openAiClient,
+                    jobAnalysisRepository,
+                    jobPostingRepository,
+                    analysisMapper
+            );
+
+            AnalysisRequest request = new AnalysisRequest();
+            request.setCandidateProfile("Java developer");
+            request.setJobPostingDescription("Backend role");
+
+            JobPosting jobPosting = new JobPosting(
+                    "https://example.com",
+                    "Company",
+                    "Title",
+                    "Location",
+                    "Description"
+            );
+
+            AnalysisResult analysisResult = new AnalysisResult();
+            JobAnalysis mappedEntity = new JobAnalysis();
+
+            String expectedSystemPrompt = PromptBuilder.buildSystemPrompt();
+            String expectedUserPrompt = PromptBuilder.buildUserPrompt(
+                    request.getCandidateProfile(),
+                    request.getJobPostingDescription()
+            );
+
+            when(openAiClient.callOpenAi(expectedSystemPrompt, expectedUserPrompt))
+                    .thenReturn(analysisResult);
+            when(analysisMapper.toEntity(jobPosting, analysisResult))
+                    .thenReturn(mappedEntity);
+            when(jobAnalysisRepository.save(mappedEntity))
+                    .thenThrow(new org.springframework.dao.DataIntegrityViolationException("DB error"));
+
+            AnalysisFailedException exception = assertThrows(
+                    AnalysisFailedException.class,
+                    () -> service.analyzeAndSave(jobPosting, request)
+            );
+
+            assertEquals("Failed to save analysis results", exception.getMessage());
+
+            verify(openAiClient).callOpenAi(expectedSystemPrompt, expectedUserPrompt);
+            verify(analysisMapper).toEntity(jobPosting, analysisResult);
+            verify(jobAnalysisRepository).save(mappedEntity);
+            verifyNoMoreInteractions(openAiClient, analysisMapper, jobAnalysisRepository, jobPostingRepository);
+        }
     }
 }

@@ -5,10 +5,16 @@ import me.romanov.jobfitanalyzer.domain.ExternalServiceException;
 import me.romanov.jobfitanalyzer.domain.JobPostingNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
@@ -60,6 +66,25 @@ class GlobalExceptionHandlerTest {
                 .andExpect(view().name("errors/error"))
                 .andExpect(model().attribute("message", "Something went wrong. Please try again later."))
                 .andExpect(model().attribute("errorCode", "INTERNAL_SERVER_ERROR"));
+    }
+
+    @Test
+    void shouldAddErrorsWhenHandlingBindException() {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+        BeanPropertyBindingResult bindingResult =
+                new BeanPropertyBindingResult(new Object(), "testObject");
+        bindingResult.reject("invalid", "Invalid value");
+
+        BindException ex = new BindException(bindingResult);
+
+        ModelAndView mav = handler.handleValidationErrors(ex);
+
+        assertEquals("errors/bad-request", mav.getViewName());
+        assertEquals(HttpStatus.BAD_REQUEST, mav.getStatus());
+        assertEquals("Validation failed. Please check the submitted data.", mav.getModel().get("message"));
+        assertEquals("VALIDATION_ERROR", mav.getModel().get("errorCode"));
+        assertTrue(mav.getModel().containsKey("errors"));
     }
 
     @RestController
