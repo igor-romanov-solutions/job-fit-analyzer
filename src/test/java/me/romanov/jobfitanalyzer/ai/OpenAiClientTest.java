@@ -2,61 +2,80 @@ package me.romanov.jobfitanalyzer.ai;
 
 import me.romanov.jobfitanalyzer.config.OpenAiProperties;
 import me.romanov.jobfitanalyzer.domain.ExternalServiceException;
+import me.romanov.jobfitanalyzer.dto.AnalysisResult;
+import me.romanov.jobfitanalyzer.dto.OpenAiResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class OpenAiClientTest {
 
-    private RestClient restClient;
-    private RestClient.RequestBodyUriSpec requestBodyUriSpec;
-    private RestClient.ResponseSpec responseSpec;
+    private MockRestServiceServer server;
+    private ObjectMapper objectMapper;
     private OpenAiClient openAiClient;
 
     @BeforeEach
     void setUp() {
-        restClient = mock(RestClient.class);
-        requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
-        RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
-        responseSpec = mock(RestClient.ResponseSpec.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-        OpenAiProperties openAiProperties = new OpenAiProperties("test-api-key");
+        RestClient.Builder restClientBuilder = RestClient.builder()
+                .baseUrl("https://api.openai.com/v1");
 
-        when(restClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri("/chat/completions")).thenReturn(requestBodySpec);
-        when(requestBodySpec.contentType(any())).thenReturn(requestBodySpec);
-        when(requestBodySpec.header("Authorization", "Bearer test-api-key")).thenReturn(requestBodySpec);
-        when(requestBodySpec.header("Content-Type", "application/json")).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any())).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
+        server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        objectMapper = new ObjectMapper();
+
+        RestClient restClient = restClientBuilder.build();
+        OpenAiProperties openAiProperties = new OpenAiProperties("test-api-key");
 
         openAiClient = new OpenAiClient(restClient, objectMapper, openAiProperties);
     }
 
     @Test
-    void shouldThrowWhenRawResponseIsBlank() {
-        when(responseSpec.body(String.class)).thenReturn("   ");
+    void shouldReturnAnalysisResultWhenOpenAiRespondsSuccessfully() {
+        MDC.put("correlationId", "corr-123");
 
-        ExternalServiceException exception = assertThrows(
-                ExternalServiceException.class,
-                () -> openAiClient.callOpenAi("system prompt", "user prompt")
-        );
+        AnalysisResult expected = new AnalysisResult();
+        expected.setRoleType("BACKEND");
+        expected.setJavaRelevance("HIGH");
 
-        assertTrue(exception.getMessage().contains("OpenAI request failed"));
+        OpenAiResponse openAiResponse = new OpenAiResponse();
+        OpenAiResponse.Choice choice = new OpenAiResponse.Choice();
+        OpenAiResponse.Message message = new OpenAiResponse.Message();
+        message.setContent(objectMapper.writeValueAsString(expected));
+        choice.setMessage(message);
+        openAiResponse.setChoices(List.of(choice));
 
-        verify(restClient).post();
-        verify(requestBodyUriSpec).uri("/chat/completions");
+        String rawResponse = objectMapper.writeValueAsString(openAiResponse);
+
+        server.expect(requestTo("https://api.openai.com/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer test-api-key"))
+                .andExpect(header("Content-Type", "application/json"))
+                .andRespond(withSuccess(rawResponse, MediaType.APPLICATION_JSON));
+
+        AnalysisResult actual = openAiClient.callOpenAi("system prompt", "user prompt");
+
+        assertEquals("BACKEND", actual.getRoleType());
+        assertEquals("HIGH", actual.getJavaRelevance());
+
+        server.verify();
+        MDC.clear();
     }
 
     @Test
-    void shouldThrowWhenResponseCannotBeParsed() {
-        when(responseSpec.body(String.class)).thenReturn("{invalid json");
+    void shouldThrowWhenRawResponseIsBlank() {
+        server.expect(requestTo("https://api.openai.com/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess("   ", MediaType.TEXT_PLAIN));
 
         ExternalServiceException exception = assertThrows(
                 ExternalServiceException.class,
@@ -64,8 +83,74 @@ class OpenAiClientTest {
         );
 
         assertTrue(exception.getMessage().contains("OpenAI request failed"));
+        server.verify();
+    }
 
-        verify(restClient).post();
-        verify(requestBodyUriSpec).uri("/chat/completions");
+    @Test
+    void shouldThrowWhenResponseHasNoChoices() {
+        OpenAiResponse openAiResponse = new OpenAiResponse();
+        openAiResponse.setChoices(List.of());
+
+        String rawResponse = objectMapper.writeValueAsString(openAiResponse);
+
+        server.expect(requestTo("https://api.openai.com/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(rawResponse, MediaType.APPLICATION_JSON));
+
+        ExternalServiceException exception = assertThrows(
+                ExternalServiceException.class,
+                () -> openAiClient.callOpenAi("system prompt", "user prompt")
+        );
+
+        assertTrue(exception.getMessage().contains("OpenAI response has no choices"));
+        server.verify();
+    }
+
+    @Test
+    void shouldThrowWhenResponseContentIsEmpty() {
+        OpenAiResponse openAiResponse = new OpenAiResponse();
+        OpenAiResponse.Choice choice = new OpenAiResponse.Choice();
+        OpenAiResponse.Message message = new OpenAiResponse.Message();
+        message.setContent("   ");
+        choice.setMessage(message);
+        openAiResponse.setChoices(List.of(choice));
+
+        String rawResponse = objectMapper.writeValueAsString(openAiResponse);
+
+        server.expect(requestTo("https://api.openai.com/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(rawResponse, MediaType.APPLICATION_JSON));
+
+        ExternalServiceException exception = assertThrows(
+                ExternalServiceException.class,
+                () -> openAiClient.callOpenAi("system prompt", "user prompt")
+        );
+
+        assertTrue(exception.getMessage().contains("OpenAI response content is empty"));
+        server.verify();
+    }
+
+    @Test
+    void shouldThrowWhenNestedJsonCannotBeParsed() {
+        OpenAiResponse openAiResponse = new OpenAiResponse();
+        OpenAiResponse.Choice choice = new OpenAiResponse.Choice();
+        OpenAiResponse.Message message = new OpenAiResponse.Message();
+        message.setContent("{broken-json}");
+        choice.setMessage(message);
+        openAiResponse.setChoices(List.of(choice));
+
+        String rawResponse = objectMapper.writeValueAsString(openAiResponse);
+
+        server.expect(requestTo("https://api.openai.com/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(rawResponse, MediaType.APPLICATION_JSON));
+
+        ExternalServiceException exception = assertThrows(
+                ExternalServiceException.class,
+                () -> openAiClient.callOpenAi("system prompt", "user prompt")
+        );
+
+        assertTrue(exception.getMessage().contains("Failed to parse OpenAI response"));
+        server.verify();
     }
 }
