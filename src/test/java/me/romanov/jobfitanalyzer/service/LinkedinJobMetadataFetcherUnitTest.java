@@ -194,4 +194,61 @@ class LinkedinJobMetadataFetcherUnitTest {
             return html;
         }
     }
+
+    @Test
+    void formatElementForAi_shouldHandleOrderedList() {
+        String html = """
+            <html>
+              <body>
+                <div class="show-more-less-html__markup">
+                  <ol>
+                    <li>First</li>
+                    <li>Second</li>
+                  </ol>
+                </div>
+              </body>
+            </html>
+            """;
+
+        LinkedinJobMetadataFetcher fetcher = new StubFetcher(html);
+
+        Optional<JobMetadata> result = fetcher.fetch("https://example.com/job");
+
+        assertTrue(result.isPresent());
+        String description = result.get().description();
+        assertNotNull(description);
+        assertTrue(description.contains("1. First"));
+        assertTrue(description.contains("2. Second"));
+    }
+
+    @Test
+    void fetch_shouldHandleEscapedCharactersInJsonLdDescription() {
+        String html = """
+            <html>
+              <head>
+                <script type="application/ld+json">
+                  {
+                    "@type":"JobPosting",
+                    "title":"Java Developer",
+                    "description":"Line 1\\nLine 2 with quote: \\"Hello\\" and slash \\\\",
+                    "hiringOrganization":{"name":"Acme GmbH"},
+                    "jobLocation":{"addressLocality":"Zurich, Switzerland"}
+                  }
+                </script>
+              </head>
+              <body></body>
+            </html>
+            """;
+
+        LinkedinJobMetadataFetcher fetcher = new StubFetcher(html);
+
+        Optional<JobMetadata> result = fetcher.fetch("https://example.com/job");
+
+        assertTrue(result.isPresent());
+        String description = result.get().description();
+        assertNotNull(description);
+        assertTrue(description.contains("Line 1"));
+        assertTrue(description.contains("Line 2"));
+        assertTrue(description.contains("Hello"));
+    }
 }
