@@ -1,5 +1,5 @@
 <div style="text-align: center;">
-  <img src="./docs/logo.png" alt="Job Fit Analyzer logo" width="96" />
+  <img src="docs/logo.png" alt="Job Fit Analyzer logo" width="96" />
 </div>
 
 # Job Fit Analyzer
