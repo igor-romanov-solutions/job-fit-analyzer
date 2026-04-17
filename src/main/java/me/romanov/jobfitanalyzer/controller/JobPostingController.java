@@ -1,6 +1,7 @@
 package me.romanov.jobfitanalyzer.controller;
 
 import jakarta.validation.Valid;
+import me.romanov.jobfitanalyzer.config.OpenAiProperties;
 import me.romanov.jobfitanalyzer.domain.JobAnalysis;
 import me.romanov.jobfitanalyzer.domain.JobPosting;
 import me.romanov.jobfitanalyzer.domain.JobPostingStatus;
@@ -41,11 +42,13 @@ public class JobPostingController {
     private final JobPostingService jobPostingService;
     private final AnalysisService analysisService;
     private final JobAnalysisRepository jobAnalysisRepository;
+    private final OpenAiProperties openAiProperties;
 
-    public JobPostingController(JobPostingService jobPostingService, AnalysisService analysisService, JobAnalysisRepository jobAnalysisRepository) {
+    public JobPostingController(JobPostingService jobPostingService, AnalysisService analysisService, JobAnalysisRepository jobAnalysisRepository, OpenAiProperties openAiProperties) {
         this.jobPostingService = jobPostingService;
         this.analysisService = analysisService;
         this.jobAnalysisRepository = jobAnalysisRepository;
+        this.openAiProperties = openAiProperties;
     }
 
     @GetMapping("/")
@@ -58,6 +61,14 @@ public class JobPostingController {
         List<JobPosting> jobs = jobPostingService.findByFilter(filter);
         model.addAttribute(JOBS_ATTRIBUTE, jobs);
         model.addAttribute(ALL_STATUSES_ATTRIBUTE, JobPostingStatus.values());
+
+        boolean openAiConfigured = openAiProperties.apiKey() != null && !openAiProperties.apiKey().isBlank();
+        model.addAttribute("openAiConfigured", openAiConfigured);
+        if (!openAiConfigured) {
+            model.addAttribute("openAiWarning",
+                    "AI analysis is unavailable because OPENAI_API_KEY is not configured.");
+        }
+
         return "jobs/list";
     }
 

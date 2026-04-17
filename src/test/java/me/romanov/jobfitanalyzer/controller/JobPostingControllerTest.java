@@ -1,6 +1,7 @@
 package me.romanov.jobfitanalyzer.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import me.romanov.jobfitanalyzer.config.OpenAiProperties;
 import me.romanov.jobfitanalyzer.domain.JobAnalysis;
 import me.romanov.jobfitanalyzer.domain.JobPosting;
 import me.romanov.jobfitanalyzer.domain.JobPostingStatus;
@@ -45,6 +46,9 @@ class JobPostingControllerTest {
 
     @MockitoBean
     private JobAnalysisRepository jobAnalysisRepository;
+
+    @MockitoBean
+    private OpenAiProperties openAiProperties;
 
     @Nested
     class RootTests {
