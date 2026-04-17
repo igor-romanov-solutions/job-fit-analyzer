@@ -96,7 +96,10 @@ class JobPostingControllerTest {
             when(jobPostingService.findByFilter(any(JobPostingFilterRequest.class)))
                     .thenReturn(List.of(job));
 
-            mockMvc.perform(get("/jobs").param("status", "NEW"))
+            JobPostingFilterRequest filter = new JobPostingFilterRequest();
+            filter.setStatus(JobPostingStatus.NEW);
+
+            mockMvc.perform(get("/jobs").sessionAttr("filter", filter))
                     .andExpect(status().isOk())
                     .andExpect(view().name("jobs/list"))
                     .andExpect(model().attributeExists("filter"))
@@ -115,9 +118,12 @@ class JobPostingControllerTest {
 
         @Test
         void shouldBulkUpdateStatusForFilteredJobs() throws Exception {
+            JobPostingFilterRequest filter = new JobPostingFilterRequest();
+            filter.setStatus(JobPostingStatus.NEW);
+            filter.setJavaRelevance("LOW");
+
             mockMvc.perform(post("/jobs/bulk-status")
-                            .param("status", "NEW")
-                            .param("javaRelevance", "LOW")
+                            .sessionAttr("filter", filter)
                             .param("targetStatus", "ANALYZED"))
                     .andExpect(status().is3xxRedirection())
                     .andExpect(redirectedUrl("/jobs?status=NEW&javaRelevance=LOW"));
