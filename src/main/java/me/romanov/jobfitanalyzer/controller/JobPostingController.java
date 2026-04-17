@@ -1,5 +1,6 @@
 package me.romanov.jobfitanalyzer.controller;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import me.romanov.jobfitanalyzer.config.OpenAiProperties;
 import me.romanov.jobfitanalyzer.domain.JobAnalysis;
@@ -28,6 +29,8 @@ public class JobPostingController {
     private static final String JOB_FORM_ATTRIBUTE = "jobForm";
     private static final String ANALYSIS_ATTRIBUTE = "analysis";
     private static final String JOB_ANALYSIS_FORM_ATTRIBUTE = "jobAnalysisForm";
+    private static final String FILTER_ATTRIBUTE = "filter";
+
 
     private static final String JOBS_CREATE_TEMPLATE = "jobs/create";
     private static final String JOBS_EDIT_TEMPLATE = "jobs/edit";
@@ -36,6 +39,7 @@ public class JobPostingController {
     private static final String REDIRECT_TO_JOBS = "redirect:/jobs";
     private static final String REDIRECT_TO_JOB_DETAILS = "redirect:/jobs/";
 
+    private static final String RETURN_TO_ATTRIBUTE = "returnTo";
     private static final String RETURN_TO_LIST = "list";
     private static final String RETURN_TO_DETAILS = "details";
 
@@ -43,6 +47,8 @@ public class JobPostingController {
     private final AnalysisService analysisService;
     private final JobAnalysisRepository jobAnalysisRepository;
     private final OpenAiProperties openAiProperties;
+
+    private static final String FILTER_SESSION_ATTRIBUTE = "filter";
 
     public JobPostingController(JobPostingService jobPostingService, AnalysisService analysisService, JobAnalysisRepository jobAnalysisRepository, OpenAiProperties openAiProperties) {
         this.jobPostingService = jobPostingService;
@@ -57,8 +63,11 @@ public class JobPostingController {
     }
 
     @GetMapping
-    public String listJobs(@ModelAttribute("filter") JobPostingFilterRequest filter, Model model) {
+    public String listJobs(HttpSession session, Model model) {
+        JobPostingFilterRequest filter = resolveFilter(session);
+
         List<JobPosting> jobs = jobPostingService.findByFilter(filter);
+        model.addAttribute(FILTER_ATTRIBUTE, filter);
         model.addAttribute(JOBS_ATTRIBUTE, jobs);
         model.addAttribute(ALL_STATUSES_ATTRIBUTE, JobPostingStatus.values());
 
@@ -70,6 +79,19 @@ public class JobPostingController {
         }
 
         return "jobs/list";
+    }
+
+    @GetMapping("/filter")
+    public String applyFilter(@ModelAttribute("filter") JobPostingFilterRequest filter,
+                              HttpSession session) {
+        session.setAttribute(FILTER_SESSION_ATTRIBUTE, filter);
+        return REDIRECT_TO_JOBS;
+    }
+
+    @GetMapping("/reset")
+    public String resetFilter(HttpSession session) {
+        session.removeAttribute(FILTER_SESSION_ATTRIBUTE);
+        return REDIRECT_TO_JOBS;
     }
 
     @GetMapping("/new")
@@ -98,9 +120,11 @@ public class JobPostingController {
     }
 
     @PostMapping("/bulk-status")
-    public String bulkUpdateStatus(@ModelAttribute("filter") JobPostingFilterRequest filter,
-                                   @RequestParam("targetStatus") JobPostingStatus targetStatus,
+    public String bulkUpdateStatus(@RequestParam("targetStatus") JobPostingStatus targetStatus,
+                                   HttpSession session,
                                    RedirectAttributes redirectAttributes) {
+        JobPostingFilterRequest filter = resolveFilter(session);
+
         jobPostingService.updateStatusByFilter(filter, targetStatus);
 
         if (filter.getStatus() != null) {
@@ -116,7 +140,7 @@ public class JobPostingController {
         return REDIRECT_TO_JOBS;
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public String viewJob(@PathVariable Long id, Model model) {
         JobPosting job = jobPostingService.findById(id);
         JobAnalysis analysis = jobAnalysisRepository
@@ -146,8 +170,7 @@ public class JobPostingController {
         model.addAttribute(JOB_ATTRIBUTE, job);
         model.addAttribute(JOB_FORM_ATTRIBUTE, jobForm);
         model.addAttribute(ALL_STATUSES_ATTRIBUTE, JobPostingStatus.values());
-        model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
-
+        model.addAttribute(RETURN_TO_ATTRIBUTE, sanitizeReturnTo(returnTo));
         return JOBS_EDIT_TEMPLATE;
     }
 
@@ -163,7 +186,7 @@ public class JobPostingController {
             JobPosting job = jobPostingService.findById(id);
             model.addAttribute(JOB_ATTRIBUTE, job);
             model.addAttribute(ALL_STATUSES_ATTRIBUTE, JobPostingStatus.values());
-            model.addAttribute("returnTo", safeReturnTo);
+            model.addAttribute(RETURN_TO_ATTRIBUTE, safeReturnTo);
             return JOBS_EDIT_TEMPLATE;
         }
 
@@ -233,5 +256,13 @@ public class JobPostingController {
         model.addAttribute(ANALYSIS_ATTRIBUTE, jobAnalysis);
 
         return "jobs/details";
+    }
+
+    private JobPostingFilterRequest resolveFilter(HttpSession session) {
+        Object sessionFilter = session.getAttribute(FILTER_SESSION_ATTRIBUTE);
+        if (sessionFilter instanceof JobPostingFilterRequest storedFilter) {
+            return storedFilter;
+        }
+        return new JobPostingFilterRequest();
     }
 }
