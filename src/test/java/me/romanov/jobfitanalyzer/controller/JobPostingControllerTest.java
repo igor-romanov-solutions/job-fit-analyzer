@@ -138,6 +138,39 @@ class JobPostingControllerTest {
         }
     }
 
+
+    @Nested
+    class FilterTests {
+        @Test
+        void shouldApplyFilterAndRedirectToJobs() throws Exception {
+            mockMvc.perform(get("/jobs/filter")
+                            .param("status", "NEW")
+                            .param("javaRelevance", "LOW"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/jobs"))
+                    .andExpect(request().sessionAttribute("filter", org.hamcrest.Matchers.notNullValue()));
+
+            verifyNoInteractions(jobPostingService, analysisService, jobAnalysisRepository);
+        }
+    }
+
+    @Nested
+    class ResetTests {
+        @Test
+        void shouldResetFilterAndRedirectToJobs() throws Exception {
+            JobPostingFilterRequest filter = new JobPostingFilterRequest();
+            filter.setStatus(JobPostingStatus.NEW);
+            filter.setJavaRelevance("LOW");
+
+            mockMvc.perform(get("/jobs/reset").sessionAttr("filter", filter))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/jobs"));
+
+            verifyNoMoreInteractions(jobPostingService);
+        }
+    }
+
+
     @Nested
     class CreateJobTests {
 
