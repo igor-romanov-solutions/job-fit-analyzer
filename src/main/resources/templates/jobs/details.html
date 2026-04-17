@@ -161,7 +161,8 @@
                                     <div class="text-uppercase text-secondary small fw-semibold mb-2">Potential concerns</div>
                                     <div class="bg-white border rounded-3 p-3">
                                         <ul class="mb-0 ps-3">
-                                            <li th:each="gap : ${analysis.gaps.split(',\\s*')}" th:text="${gap}">
+                                            <li th:each="gap : ${#strings.listSplit(analysis.gaps, ',')}"
+                                                th:text="${#strings.trim(gap)}">
                                                 Example concern
                                             </li>
                                         </ul>
