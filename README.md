@@ -1,7 +1,4 @@
-<div style="text-align: center;">
-  <img src="docs/logo.png" alt="Job Fit Analyzer logo" width="96" />
-</div>
-
+![Job Fit Analyzer](docs/logo.png)
 # Job Fit Analyzer
 
 Job Fit Analyzer is an AI-powered, LLM-based job fit analysis platform that evaluates job postings against a candidate profile and highlights how well a role matches the target background.
