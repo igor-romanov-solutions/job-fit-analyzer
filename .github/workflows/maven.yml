@@ -39,6 +39,7 @@ jobs:
             -Dsonar.projectKey=igor-romanov-solutions_job-fit-analyzer \
             -Dsonar.organization=igor-romanov-solutions \
             -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.qualitygate.wait=true \
             -Dsonar.token=$SONAR_TOKEN
 
     - name: Upload JAR artifact
