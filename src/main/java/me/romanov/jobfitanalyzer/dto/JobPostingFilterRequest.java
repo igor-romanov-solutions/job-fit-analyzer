@@ -2,20 +2,17 @@ package me.romanov.jobfitanalyzer.dto;
 
 import lombok.Data;
 import me.romanov.jobfitanalyzer.domain.JobPostingStatus;
-import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDate;
+import java.io.Serial;
+import java.io.Serializable;
 
 @Data
-public class JobPostingFilterRequest {
+public class JobPostingFilterRequest implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private JobPostingStatus status;
     private String javaRelevance;
     private String requiredGermanLevel;
-
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate createdFrom;
-
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate createdTo;
 }
