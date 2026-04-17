@@ -353,6 +353,7 @@ public class LinkedinJobMetadataFetcher implements JobMetadataFetcher {
         sb.repeat("  ", Math.max(0, depth - 1));
     }
 
+    // ... existing code ...
     private String normalizeStructuredText(String value) {
         if (value == null) {
             return null;
@@ -362,13 +363,63 @@ public class LinkedinJobMetadataFetcher implements JobMetadataFetcher {
                 .replace('\u00A0', ' ')
                 .replace("\r\n", "\n")
                 .replace("\r", "\n")
-                .replaceAll("[ \\t]+", " ")
-                .replaceAll(" *\n *", "\n")
-                .replaceAll("\n{3,}", "\n\n")
-                .trim();
+                .replaceAll("[ \\t]+", " ");
+
+        normalized = trimSpacesAroundLineBreaks(normalized);
+        normalized = collapseExtraBlankLines(normalized);
+        normalized = normalized.trim();
 
         return normalized.isBlank() ? null : normalized;
     }
+
+    private String trimSpacesAroundLineBreaks(String value) {
+        StringBuilder result = new StringBuilder(value.length());
+        int i = 0;
+
+        while (i < value.length()) {
+            char ch = value.charAt(i);
+
+            if (ch == '\n') {
+                while (!result.isEmpty() && result.charAt(result.length() - 1) == ' ') {
+                    result.deleteCharAt(result.length() - 1);
+                }
+                result.append('\n');
+                do {
+                    i++;
+                } while (i < value.length() && value.charAt(i) == ' ');
+            } else {
+                result.append(ch);
+                i++;
+            }
+        }
+
+        return result.toString();
+    }
+
+    private String collapseExtraBlankLines(String value) {
+        StringBuilder result = new StringBuilder(value.length());
+        int i = 0;
+        int newlineCount = 0;
+
+        while (i < value.length()) {
+            char ch = value.charAt(i);
+
+            if (ch == '\n') {
+                newlineCount++;
+                if (newlineCount <= 2) {
+                    result.append(ch);
+                }
+            } else {
+                newlineCount = 0;
+                result.append(ch);
+            }
+
+            i++;
+        }
+
+        return result.toString();
+    }
+
 
     private String normalizeInline(String value) {
         if (value == null) {
