@@ -16,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -490,6 +491,45 @@ class JobPostingServiceImplTest {
             verify(jobPostingRepository).findAll(ArgumentMatchers.<Specification<JobPosting>>any());
             verifyNoMoreInteractions(jobPostingRepository, jobMetadataFetcher);
         }
+    }
+
+    @Test
+    void shouldSortByStatusThenJavaRelevanceThenGermanLevel() {
+        JobPosting newJob = buildJob(1L, JobPostingStatus.NEW, "HIGH", "B2", LocalDateTime.now().minusHours(1));
+        JobPosting analyzedHighJob = buildJob(2L, JobPostingStatus.ANALYZED, "HIGH", "B2", LocalDateTime.now().minusHours(2));
+        JobPosting analyzedLowJob = buildJob(3L, JobPostingStatus.ANALYZED, "LOW", "B2", LocalDateTime.now().minusHours(3));
+        JobPosting maybeJob = buildJob(4L, JobPostingStatus.MAYBE, "HIGH", "B1", LocalDateTime.now().minusHours(4));
+
+        when(jobPostingRepository.findAll(ArgumentMatchers.<Specification<JobPosting>>any()))
+                .thenReturn(List.of(analyzedLowJob, maybeJob, analyzedHighJob, newJob));
+
+        JobPostingFilterRequest filter = new JobPostingFilterRequest();
+
+        List<JobPosting> result = jobPostingService.findByFilter(filter);
+
+        assertEquals(List.of(newJob, analyzedHighJob, analyzedLowJob, maybeJob), result);
+        verify(jobPostingRepository).findAll(ArgumentMatchers.<Specification<JobPosting>>any());
+        verifyNoMoreInteractions(jobPostingRepository);
+    }
+
+    private static JobPosting buildJob(Long id,
+                                       JobPostingStatus status,
+                                       String javaRelevance,
+                                       String germanLevel,
+                                       LocalDateTime createdAt) {
+        JobPosting job = new JobPosting("https://example.com", "Company", "Title", "Location", "Description");
+        job.setId(id);
+        job.setStatus(status);
+        job.setCreatedAt(createdAt);
+
+        JobAnalysis analysis = new JobAnalysis();
+        analysis.setCreatedAt(createdAt.plusMinutes(1));
+        analysis.setJavaRelevance(javaRelevance);
+        analysis.setRequiredGermanLevel(germanLevel);
+        analysis.setJobPosting(job);
+
+        job.getAnalyses().add(analysis);
+        return job;
     }
 
 }

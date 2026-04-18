@@ -1,9 +1,6 @@
 package me.romanov.jobfitanalyzer.service;
 
-import me.romanov.jobfitanalyzer.domain.JobAnalysis;
-import me.romanov.jobfitanalyzer.domain.JobPosting;
-import me.romanov.jobfitanalyzer.domain.JobPostingNotFoundException;
-import me.romanov.jobfitanalyzer.domain.JobPostingStatus;
+import me.romanov.jobfitanalyzer.domain.*;
 import me.romanov.jobfitanalyzer.dto.CreateJobPostingRequest;
 import me.romanov.jobfitanalyzer.dto.JobMetadata;
 import me.romanov.jobfitanalyzer.dto.JobPostingFilterRequest;
@@ -86,7 +83,21 @@ public class JobPostingServiceImpl implements JobPostingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<JobPosting> findByFilter(JobPostingFilterRequest filterRequest) {
+        return loadFilteredJobs(filterRequest);
+    }
+
+    @Override
+    public void updateStatusByFilter(JobPostingFilterRequest filterRequest, JobPostingStatus status) {
+        Objects.requireNonNull(filterRequest, "filterRequest must not be null");
+        Objects.requireNonNull(status, "status must not be null");
+
+        List<JobPosting> jobs = loadFilteredJobs(filterRequest);
+        jobs.forEach(jobPosting -> jobPosting.updateStatus(status));
+    }
+
+    private List<JobPosting> loadFilteredJobs(JobPostingFilterRequest filterRequest) {
         Specification<JobPosting> spec = Specification.allOf();
 
         if (filterRequest.getStatus() != null) {
@@ -95,20 +106,39 @@ public class JobPostingServiceImpl implements JobPostingService {
 
         List<JobPosting> jobs = jobPostingRepository.findAll(spec);
 
-        Comparator<JobPosting> createdAtComparator =
-                Comparator.comparing(JobPosting::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
-                        .reversed();
-
         return jobs.stream()
                 .filter(job -> matchesLatestAnalysis(job, filterRequest))
-                .sorted(createdAtComparator)
+                .sorted(jobPostingComparator())
                 .toList();
     }
 
+    private Comparator<JobPosting> jobPostingComparator() {
+        return Comparator
+                .comparingInt((JobPosting job) ->
+                        job.getStatus() != null ? job.getStatus().getPriority() : Integer.MAX_VALUE)
+                .thenComparingInt(job ->
+                        javaRelevancePriority(latestAnalysis(job).map(JobAnalysis::getJavaRelevance).orElse(null)))
+                .thenComparingInt(job ->
+                        germanLevelPriority(latestAnalysis(job).map(JobAnalysis::getRequiredGermanLevel).orElse(null)))
+                .thenComparing(JobPosting::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(JobPosting::getId, Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private Optional<JobAnalysis> latestAnalysis(JobPosting job) {
+        return job.getAnalyses().stream()
+                .max(Comparator.comparing(JobAnalysis::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
+    }
+
+    private int javaRelevancePriority(String value) {
+        return JavaRelevance.from(value).getPriority();
+    }
+
+    private int germanLevelPriority(String value) {
+        return GermanLevel.from(value).getPriority();
+    }
+
     private boolean matchesLatestAnalysis(JobPosting job, JobPostingFilterRequest filterRequest) {
-        JobAnalysis latestAnalysis = job.getAnalyses().stream()
-                .max(Comparator.comparing(JobAnalysis::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-                .orElse(null);
+        JobAnalysis latestAnalysis = latestAnalysis(job).orElse(null);
 
         boolean javaRelevanceMatches = filterRequest.getJavaRelevance() == null
                 || filterRequest.getJavaRelevance().isBlank()
@@ -121,15 +151,6 @@ public class JobPostingServiceImpl implements JobPostingService {
                 && filterRequest.getRequiredGermanLevel().equals(latestAnalysis.getRequiredGermanLevel()));
 
         return javaRelevanceMatches && germanLevelMatches;
-    }
-
-    @Override
-    public void updateStatusByFilter(JobPostingFilterRequest filterRequest, JobPostingStatus status) {
-        Objects.requireNonNull(filterRequest, "filterRequest must not be null");
-        Objects.requireNonNull(status, "status must not be null");
-
-        List<JobPosting> jobs = findByFilter(filterRequest);
-        jobs.forEach(jobPosting -> jobPosting.updateStatus(status));
     }
 
     private String normalize(String value) {
