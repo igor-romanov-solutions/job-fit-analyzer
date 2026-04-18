@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: JobFitAnalyzer
+
+  thymeleaf:
+    cache: false
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
+
+server:
+  servlet:
+    session:
+      tracking-modes: cookie

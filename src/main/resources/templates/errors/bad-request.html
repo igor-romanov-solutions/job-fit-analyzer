@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bad Request</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5">
+                    <div class="text-uppercase small fw-semibold mb-2"
+                         style="color: #0972D3; letter-spacing: 0.08em;">
+                        Error 400
+                    </div>
+
+                    <h1 class="display-6 fw-bold mb-3 app-title">Validation failed</h1>
+
+                    <p class="text-secondary mb-4 app-subtitle">
+                        Please check the submitted data and try again.
+                    </p>
+
+                    <div class="alert alert-danger border-0 mb-4">
+                        <strong th:text="${errorCode}">VALIDATION_ERROR</strong>
+                        <span class="d-block mt-1" th:text="${message}">Validation failed. Please check the submitted data.</span>
+                    </div>
+
+                    <div th:if="${errors != null and !errors.isEmpty()}" class="card bg-light border-0 mb-4">
+                        <div class="card-body">
+                            <h2 class="h6 fw-semibold mb-3">Details</h2>
+                            <ul class="mb-0">
+                                <li th:each="err : ${errors}" th:text="${err.defaultMessage}">Field error</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary" type="button" onclick="history.back()">Go back</button>
+                        <a class="btn btn-outline-secondary" th:href="@{/jobs}">Jobs list</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

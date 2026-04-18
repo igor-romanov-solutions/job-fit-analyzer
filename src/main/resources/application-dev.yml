@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/jobfitdb2;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
