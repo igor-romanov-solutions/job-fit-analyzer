@@ -1,26 +1,19 @@
 ![Job Fit Analyzer](docs/logo.png)
 # Job Fit Analyzer
 
-Job Fit Analyzer is an AI-powered, LLM-based job fit analysis platform that evaluates job postings against a candidate profile and highlights how well a role matches the target background.
-
-The project was built as a practical backend-oriented MVP to demonstrate production-style Java development, Spring Boot architecture, CI/CD, Dockerization, database persistence, and external API integration.
+Job Fit Analyzer is an AI-powered job triage platform that helps job seekers systematically review and prioritize vacancies against a candidate profile. It uses LLM-based analysis to highlight how well a role matches the target background, helping users quickly identify promising opportunities and reject weak matches early.
+The project is currently delivered as a practical MVP and is actively evolving toward a more complete job-search workflow platform.
 
 ## Why this project exists
 
-I built this application as part of my job search strategy to showcase the skills and keywords commonly expected for Senior Java / Spring Boot roles, especially in Switzerland and other European markets.
+Job Fit Analyzer is built for people who approach job hunting as a structured process rather than a casual search. On large platforms like LinkedIn, job results are often repetitive, noisy, and only partially relevant, which makes it easy to miss good opportunities or spend time on unsuitable ones.
 
-The goal was not only to create a functional app but also to demonstrate:
-- clean Spring Boot architecture,
-- persistence with Spring Data JPA,
-- server-side rendered UI with Thymeleaf,
-- integration with external AI services,
-- observability-friendly logging,
-- containerized deployment,
-- automated tests and CI pipeline.
+The application helps users collect vacancies in one place, enrich them with AI-generated signals, and quickly triage them into roles to reject, review later, or prioritize for application. It does not apply for jobs automatically — but it helps users make that decision faster, more consistently, and with greater confidence.
 
 ## Key features
 
 - Create, update, view, and filter job postings
+- Auto-fill job posting details from LinkedIn URLs
 - Analyze a job posting against a candidate profile
 - Store analysis results in PostgreSQL
 - Bulk update job status by filter
@@ -32,47 +25,107 @@ The goal was not only to create a functional app but also to demonstrate:
 - SonarCloud analysis
 - Unit and MVC tests
 
+## Roadmap
+
+### Short-term
+- Add pagination for the job list
+- Introduce background processing for bulk import
+- Introduce background processing for bulk analysis
+- Add background progress tracking and failure reporting
+- Add status updates for selected jobs using checkboxes
+
+### Mid-term
+- Support retry/cancel for long-running tasks
+- Improve job list sorting and filtering UX
+- Compare multiple CV versions against a job posting
+- Add smarter CV-to-job fit recommendations
+
+### Long-term
+- Add authentication and authorization
+- Add a more flexible filter builder
+- Expand job matching and recommendation logic
+- Support additional job application channels beyond LinkedIn
+- Improve analytics and dashboarding
+
 ## Tech stack
 
+### Backend
 - Java 21
 - Spring Boot
 - Spring MVC
 - Spring Data JPA
 - Spring Validation
+
+### Frontend
 - Thymeleaf
+- Bootstrap
+
+### Persistence
 - PostgreSQL
 - H2 for tests
 - Flyway
+
+### AI / Integration
+- OpenAI API
+- LinkedIn metadata extraction
+
+### DevOps / Quality
 - Docker
 - Docker Compose
 - GitHub Actions
 - SonarCloud
-- Lombok
+
+### Testing
+- JUnit 5
+- Mockito
+- MockMvc
+
+### Build tools
 - Maven
+- Lombok
 
 ## Architecture highlights
 
-This project follows a layered architecture:
+This project follows a layered Spring Boot architecture with a clear separation of concerns:
 
-- **controller** — web layer and UI endpoints
-- **service** — business logic and orchestration
-- **repository** — persistence layer
-- **domain** — entities and domain exceptions
-- **dto** — request/response models
-- **ai** — OpenAI integration client
-- **config** — application configuration and request correlation support
+- **controller** — handles HTTP requests and server-rendered UI navigation
+- **service** — contains business logic, orchestration, and transaction boundaries
+- **repository** — isolates persistence access through Spring Data JPA
+- **domain** — models job postings, analysis results, statuses, and workflow state
+- **dto** — defines request and response payloads
+- **ai** — encapsulates OpenAI integration behind a dedicated client
+- **config** — provides application configuration and request tracing support
 
 ### Design decisions
 - Centralized exception handling with `@ControllerAdvice`
-- Transactional service layer for consistent persistence
-- Dedicated `OpenAiClient` for external API integration
-- `CorrelationIdFilter` for request tracing across logs
-- `OpenAiProperties` for typed configuration
-- Test coverage for controllers and services
+- Transactional service layer for consistency and data integrity
+- Business-driven ranking for job prioritization
+- AI analysis isolated from web and persistence concerns
+- Metadata extraction from LinkedIn job URLs
+- Correlation ID logging for request tracing
+- Test coverage for controllers, services, and mapping logic
 
 ## Screenshots
 
-_Add screenshots here if available._
+### Job list
+Browse, filter, and triage saved job postings.
+
+![Job list](docs/screenshots/job-list.png)
+
+### Create job
+Add a vacancy manually or auto-fill it from a LinkedIn URL.
+
+![Create job](docs/screenshots/create-job.png)
+
+### Analyze job
+Compare a vacancy against a candidate profile and run AI analysis.
+
+![Analyze job](docs/screenshots/analyze-job.png)
+
+### Analysis result
+Review the generated fit summary, key signals, and potential concerns.
+
+![Analysis result](docs/screenshots/analysis-result.png)
 
 ## Run locally
 
@@ -137,17 +190,3 @@ The project includes:
 - service layer unit tests
 - controller MVC tests
 - application context test
-
-## Future improvements
-
-Planned next steps:
-- pagination for the job list
-- better structured logging and metrics
-- cloud deployment
-- authentication and authorization
-- more robust OpenAI error handling
-- richer analytics for job/candidate fit scoring
-
-## License
-
-This project is intended as a personal portfolio and demo project.
