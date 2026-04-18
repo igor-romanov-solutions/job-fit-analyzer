@@ -179,7 +179,7 @@
                            th:href="@{/jobs/{id}/edit(id=${job.id}, returnTo='details')}">
                             Edit
                         </a>
-                        <a class="btn btn-outline-primary" th:href="@{/jobs/{id}/analyze(id=${job.id})}">
+                        <a class="btn btn-outline-primary" th:href="@{/jobs/{id}/analyze(id=${job.id}, returnTo='details')}">
                             Analyze
                         </a>
                         <a class="btn btn-outline-secondary" th:href="@{/jobs}">

@@ -119,14 +119,18 @@
                         <td><span class="badge text-bg-secondary" th:text="${job.status}">NEW</span></td>
                         <td th:text="${job.analyses != null and !job.analyses.isEmpty() ? job.analyses[0].javaRelevance : '—'}">LOW</td>
                         <td th:text="${job.analyses != null and !job.analyses.isEmpty() ? job.analyses[0].requiredGermanLevel : '—'}">B2</td>
-                        <td class="text-end">
-                            <a class="btn btn-sm btn-outline-primary"
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-primary me-1"
                                th:href="@{/jobs/{id}(id=${job.id}, returnTo='list')}">
                                 View
                             </a>
-                            <a class="btn btn-sm btn-outline-secondary"
+                            <a class="btn btn-sm btn-outline-secondary me-1"
                                th:href="@{/jobs/{id}/edit(id=${job.id}, returnTo='list')}">
                                 Edit
+                            </a>
+                            <a class="btn btn-sm btn-outline-success"
+                               th:href="@{/jobs/{id}/analyze(id=${job.id}, returnTo='list')}">
+                                Analyze
                             </a>
                         </td>
                     </tr>

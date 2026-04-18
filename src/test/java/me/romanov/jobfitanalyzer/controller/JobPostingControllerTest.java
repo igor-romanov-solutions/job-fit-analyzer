@@ -403,7 +403,7 @@ class JobPostingControllerTest {
         }
 
         @Test
-        void shouldAnalyzeJobAndShowDetails() throws Exception {
+        void shouldAnalyzeJobAndRedirectToDetails() throws Exception {
             Long id = 1L;
             JobPosting job = buildJobPosting(id, "A", JobPostingStatus.NEW);
             JobAnalysis savedAnalysis = buildAnalysis(id, job);
@@ -413,11 +413,10 @@ class JobPostingControllerTest {
                     .thenReturn(savedAnalysis);
 
             mockMvc.perform(post("/jobs/{id}/analyze", id)
-                            .param("cvText", "Java developer with Spring"))
-                    .andExpect(status().isOk())
-                    .andExpect(view().name("jobs/details"))
-                    .andExpect(model().attribute("job", job))
-                    .andExpect(model().attribute("analysis", savedAnalysis));
+                            .param("cvText", "Java developer with Spring")
+                            .param("returnTo", "details"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/jobs/" + id));
 
             verify(jobPostingService).findById(id);
             verify(analysisService).analyzeAndSave(eq(job), any(AnalysisRequest.class));

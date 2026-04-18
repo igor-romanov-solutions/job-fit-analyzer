@@ -223,12 +223,15 @@ public class JobPostingController {
     }
 
     @GetMapping("/{id}/analyze")
-    public String showAnalyzeForm(@PathVariable Long id, Model model) {
+    public String showAnalyzeForm(@PathVariable Long id,
+                                  @RequestParam(value = "returnTo", required = false, defaultValue = "details") String returnTo,
+                                  Model model) {
         JobPosting job = jobPostingService.findById(id);
 
         model.addAttribute(JOB_ATTRIBUTE, job);
         model.addAttribute(JOB_ANALYSIS_FORM_ATTRIBUTE, new JobAnalysisForm());
         model.addAttribute(ANALYSIS_ATTRIBUTE, null);
+        model.addAttribute(RETURN_TO_ATTRIBUTE, sanitizeReturnTo(returnTo));
 
         return JOBS_ANALYZE_TEMPLATE;
     }
@@ -237,7 +240,10 @@ public class JobPostingController {
     public String analyzeJob(@PathVariable Long id,
                              @Valid @ModelAttribute("jobAnalysisForm") JobAnalysisForm form,
                              BindingResult bindingResult,
+                             @RequestParam(value = "returnTo", required = false, defaultValue = "details") String returnTo,
                              Model model) {
+        String safeReturnTo = sanitizeReturnTo(returnTo);
+
         JobPosting job = jobPostingService.findById(id);
 
         if (bindingResult.hasErrors()) {
@@ -255,7 +261,11 @@ public class JobPostingController {
         model.addAttribute(JOB_ATTRIBUTE, job);
         model.addAttribute(ANALYSIS_ATTRIBUTE, jobAnalysis);
 
-        return "jobs/details";
+        if (RETURN_TO_DETAILS.equals(safeReturnTo)) {
+            return REDIRECT_TO_JOB_DETAILS + id;
+        } else {
+            return REDIRECT_TO_JOBS;
+        }
     }
 
     private JobPostingFilterRequest resolveFilter(HttpSession session) {

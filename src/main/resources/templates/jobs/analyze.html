@@ -61,6 +61,14 @@
                     <div th:text="${job.location != null ? job.location : '(not set)'}">Zurich</div>
                 </div>
 
+                <div class="col-md-6 d-flex justify-content-md-end align-items-md-end">
+                    <button type="submit"
+                            form="jobAnalysisForm"
+                            class="btn btn-sm btn-outline-success">
+                        Analyze
+                    </button>
+                </div>
+
                 <div class="col-12">
                     <div class="text-uppercase text-secondary small fw-semibold mb-2">Description</div>
                     <div class="bg-light border rounded-3 p-3" style="white-space: pre-wrap;"
@@ -78,6 +86,7 @@
                   th:object="${jobAnalysisForm}"
                   method="post"
                   id="jobAnalysisForm">
+                <input type="hidden" name="returnTo" th:value="${returnTo}">
                 <div class="mb-3">
                     <label for="cvText" class="form-label small fw-semibold text-uppercase text-secondary mb-2">
                         CV
