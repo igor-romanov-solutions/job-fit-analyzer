@@ -1,7 +1,9 @@
 ![Job Fit Analyzer](docs/logo.png)
+
 # Job Fit Analyzer
 
 Job Fit Analyzer is an AI-powered job triage platform that helps job seekers systematically review and prioritize vacancies against a candidate profile. It uses LLM-based analysis to highlight how well a role matches the target background, helping users quickly identify promising opportunities and reject weak matches early.
+
 The project is currently delivered as a practical MVP and is actively evolving toward a more complete job-search workflow platform.
 
 ## Why this project exists
@@ -103,7 +105,6 @@ This project follows a layered Spring Boot architecture with a clear separation 
 - AI analysis isolated from web and persistence concerns
 - Metadata extraction from LinkedIn job URLs
 - Correlation ID logging for request tracing
-- Test coverage for controllers, services, and mapping logic
 
 ## Screenshots
 
@@ -153,17 +154,25 @@ Review the generated fit summary, key signals, and potential concerns.
 
 ## Run with Docker
 
-### Build the image
+### Docker Hub
+
+Published image: [igorromanovsolutions/job-fit-analyzer](https://hub.docker.com/r/igorromanovsolutions/job-fit-analyzer)
+
+### Development
+
+Use the development compose file for local build from source.
 
 ```bash
-docker build -t job-fit-analyzer .
+docker compose -f compose.dev.yml up --build
 ```
 
-### Run with Docker Compose
+### Production
+
+Use the production compose file to run the published image.
+
 ```bash
-docker compose up --build
+docker compose -f compose.prod.yml up -d
 ```
-
 
 The application uses PostgreSQL and requires the OpenAI API key to be provided through environment variables.
 
