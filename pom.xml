@@ -10,7 +10,7 @@
     </parent>
     <groupId>me.romanov</groupId>
     <artifactId>job-fit-analyzer</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
     <name>Job Fit Analyzer</name>
     <description>Job Fit Analyzer</description>
     <url/>
