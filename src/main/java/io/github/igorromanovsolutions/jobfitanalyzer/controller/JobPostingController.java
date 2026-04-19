@@ -10,7 +10,6 @@ import io.github.igorromanovsolutions.jobfitanalyzer.service.AnalysisService;
 import io.github.igorromanovsolutions.jobfitanalyzer.service.JobPostingService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,7 +21,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/jobs")
-@Slf4j
 public class JobPostingController {
 
     private static final String ALL_STATUSES_ATTRIBUTE = "allStatuses";
@@ -74,8 +72,6 @@ public class JobPostingController {
         model.addAttribute(ALL_STATUSES_ATTRIBUTE, JobPostingStatus.values());
 
         boolean openAiConfigured = openAiProperties.apiKey() != null && !openAiProperties.apiKey().isBlank();
-        log.debug("OpenAI configuration: {}", openAiConfigured);
-        log.debug("OpenAI configuration: {}", openAiProperties.apiKey());
         model.addAttribute("openAiConfigured", openAiConfigured);
         if (!openAiConfigured) {
             model.addAttribute("openAiWarning",
