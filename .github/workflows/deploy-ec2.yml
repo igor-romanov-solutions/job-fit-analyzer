@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - aws-deployment
+      - feature/aws-deployment
   workflow_dispatch:
 
 env:
