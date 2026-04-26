@@ -36,6 +36,8 @@ jobs:
       run: mvn -B package --file pom.xml
 
     - name: SonarCloud analysis
+      # SonarCloud free plan allows pull requests and only one default branch ('develop' in our case)
+      if: github.ref == 'refs/heads/develop'
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
