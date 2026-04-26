@@ -3,12 +3,14 @@ name: Deploy to EC2
 on:
   push:
     branches:
+      # Keep this in sync with env.DEPLOY_BRANCH below
       - feature/aws-deployment
   workflow_dispatch:
 
 env:
   IMAGE_NAME: igorromanovsolutions/job-fit-analyzer
   IMAGE_TAG: test
+  DEPLOY_BRANCH: feature/aws-deployment
 
 jobs:
   build-push-deploy:
@@ -56,7 +58,9 @@ jobs:
         run: |
           ssh -i ~/.ssh/key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" << 'EOF'
             cd "${{ secrets.EC2_APP_DIR }}"
+            git fetch origin "${{ env.DEPLOY_BRANCH }}"
+            git reset --hard origin/"${{ env.DEPLOY_BRANCH }}"
             docker compose -f compose.prod.yml pull app
             docker compose -f compose.prod.yml up -d
-            docker image prune -f
+            docker image prune -f            
           EOF
