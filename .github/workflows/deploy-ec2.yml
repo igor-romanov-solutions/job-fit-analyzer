@@ -1,0 +1,73 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      # Keep this in sync with env.DEPLOY_BRANCH below
+      - main
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: igorromanovsolutions/job-fit-analyzer
+  IMAGE_TAG: 0.1.1
+  DEPLOY_BRANCH: main
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        #actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Set up Java 21
+        #actions/setup-java@v5.2.0
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and test
+        run: ./mvnw clean package
+
+      - name: Login to Docker Hub
+        #docker/login-action@v4.1.0
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .          
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}          
+
+      - name: Configure SSH
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/key
+          chmod 600 ~/.ssh/key
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy on EC2
+        env:
+          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          ssh -i ~/.ssh/key "$EC2_USER"@"$EC2_HOST" << 'EOF'
+            cd "$EC2_APP_DIR"
+            git fetch origin "${{ env.DEPLOY_BRANCH }}"
+            git reset --hard origin/"${{ env.DEPLOY_BRANCH }}"
+            docker compose -f compose.prod.yml pull app
+            docker compose -f compose.prod.yml up -d
+            docker image prune -f            
+          EOF
