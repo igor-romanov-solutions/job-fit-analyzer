@@ -37,7 +37,9 @@ jobs:
 
     - name: SonarCloud analysis
       # SonarCloud free plan allows pull requests and only one default branch ('develop' in our case)
-      if: github.ref == 'refs/heads/develop'
+      if: >
+        github.ref == 'refs/heads/develop' ||
+        (github.event_name == 'pull_request' && github.base_ref == 'develop')
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
