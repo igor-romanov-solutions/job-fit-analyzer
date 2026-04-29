@@ -9,7 +9,8 @@ on:
 
 env:
   IMAGE_NAME: igorromanovsolutions/job-fit-analyzer
-  IMAGE_TAG: 0.1.1
+  IMAGE_VERSION: 0.1.1
+  IMAGE_MINOR_VERSION: 0.1
   DEPLOY_BRANCH: main
 
 jobs:
@@ -41,11 +42,17 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .          
+          docker build \
+            -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_VERSION }} \
+            -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_MINOR_VERSION }} \
+            -t ${{ env.IMAGE_NAME }}:latest \
+            .          
 
       - name: Push Docker image
         run: |
-          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}          
+          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_VERSION }}
+          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_MINOR_VERSION }}
+          docker push ${{ env.IMAGE_NAME }}:latest          
 
       - name: Configure SSH
         env:
@@ -64,11 +71,11 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
         run: |
           ssh -i ~/.ssh/key "$EC2_USER"@"$EC2_HOST" << 'EOF'
+            set -e
             cd "${{ env.EC2_APP_DIR }}"
             git fetch origin "${{ env.DEPLOY_BRANCH }}"
             git checkout -B "${{ env.DEPLOY_BRANCH }}" origin/"${{ env.DEPLOY_BRANCH }}"
-            git reset --hard origin/"${{ env.DEPLOY_BRANCH }}"
-            docker compose -f compose.prod.yml -f compose.aws.yml pull app
-            docker compose -f compose.prod.yml -f compose.aws.yml up -d --force-recreate app
+            IMAGE_TAG="${{ env.IMAGE_VERSION }}" docker compose -f compose.prod.yml -f compose.aws.yml pull app
+            IMAGE_TAG="${{ env.IMAGE_VERSION }}" docker compose -f compose.prod.yml -f compose.aws.yml up -d --force-recreate app
             docker image prune -f            
           EOF
