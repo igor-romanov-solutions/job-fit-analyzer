@@ -64,7 +64,7 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
         run: |
           ssh -i ~/.ssh/key "$EC2_USER"@"$EC2_HOST" << 'EOF'
-            cd "$EC2_APP_DIR"
+            cd "${{ env.EC2_APP_DIR }}"
             git fetch origin "${{ env.DEPLOY_BRANCH }}"
             git checkout -B "${{ env.DEPLOY_BRANCH }}" origin/"${{ env.DEPLOY_BRANCH }}"
             git reset --hard origin/"${{ env.DEPLOY_BRANCH }}"
