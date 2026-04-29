@@ -9,7 +9,7 @@ on:
 
 env:
   IMAGE_NAME: igorromanovsolutions/job-fit-analyzer
-  IMAGE_VERSION: 0.1.2
+  IMAGE_VERSION: 0.1.3
   IMAGE_MINOR_VERSION: 0.1
   DEPLOY_BRANCH: main
 
