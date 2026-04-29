@@ -2,6 +2,14 @@
 
 # Job Fit Analyzer
 
+[![Java CI with Maven](https://github.com/igor-romanov-solutions/job-fit-analyzer/actions/workflows/maven.yml/badge.svg)](https://github.com/igor-romanov-solutions/job-fit-analyzer/actions/workflows/maven.yml)
+[![Deploy to EC2](https://github.com/igor-romanov-solutions/job-fit-analyzer/actions/workflows/deploy-ec2.yml/badge.svg)](https://github.com/igor-romanov-solutions/job-fit-analyzer/actions/workflows/deploy-ec2.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=igor-romanov-solutions_job-fit-analyzer&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=igor-romanov-solutions_job-fit-analyzer)
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.x-brightgreen)
+![Docker](https://img.shields.io/badge/Docker-ready-blue)
+![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20CloudWatch-ff9900)
+
 Job Fit Analyzer is an AI-powered job triage platform that helps job seekers systematically review and prioritize vacancies against a candidate profile. It uses LLM-based analysis to highlight how well a role matches the target background, helping users quickly identify promising opportunities and reject weak matches early.
 
 The project is currently delivered as a practical MVP and is actively evolving toward a more complete job-search workflow platform.
@@ -16,16 +24,18 @@ The application helps users collect vacancies in one place, enrich them with AI-
 
 - Create, update, view, and filter job postings
 - Auto-fill job posting details from LinkedIn URLs
-- Analyze a job posting against a candidate profile
-- Store analysis results in PostgreSQL
-- Bulk update job status by filter
-- Server-side rendered UI with Thymeleaf
+- Analyze job postings against a candidate profile using OpenAI
+- Store job postings and analysis results in PostgreSQL
+- Manage database schema evolution with Flyway migrations
+- Bulk update job statuses by filter
+- Server-side rendered UI with Thymeleaf and Bootstrap
 - Centralized error handling with custom error pages
 - Correlation ID logging for request tracing
-- Docker and Docker Compose support
-- GitHub Actions CI pipeline
-- SonarCloud analysis
-- Unit and MVC tests
+- Spring Boot Actuator health endpoint for operational checks
+- Docker and Docker Compose support for local and production-like runs
+- AWS EC2 deployment with CloudWatch container log shipping
+- GitHub Actions CI/CD pipeline with Maven, tests, SonarCloud, Docker image publishing, and EC2 deployment
+- Unit, MVC, and application context tests
 
 ## Roadmap
 
@@ -75,7 +85,15 @@ The application helps users collect vacancies in one place, enrich them with AI-
 - Docker
 - Docker Compose
 - GitHub Actions
+- Docker Hub
 - SonarCloud
+- JaCoCo
+
+### Cloud / Operations
+- AWS EC2
+- AWS CloudWatch Logs
+- Spring Boot Actuator
+- Correlation ID logging
 
 ### Testing
 - JUnit 5
@@ -105,6 +123,41 @@ This project follows a layered Spring Boot architecture with a clear separation 
 - AI analysis isolated from web and persistence concerns
 - Metadata extraction from LinkedIn job URLs
 - Correlation ID logging for request tracing
+
+### Production-oriented practices
+- Database migrations are managed with Flyway instead of relying on Hibernate schema generation
+- Application health is exposed through Spring Boot Actuator
+- Docker Compose health checks are used for service readiness
+- AWS-specific logging is isolated in a dedicated Docker Compose override file
+- GitHub Actions workflows pin third-party actions by commit SHA
+- CI pipeline includes automated tests, quality analysis, and artifact publishing
+
+### High-level architecture
+
+```mermaid
+flowchart LR
+    User[User] --> Web[Spring MVC + Thymeleaf]
+    Web --> Service[Service Layer]
+    Service --> Repository[Spring Data JPA]
+    Repository --> Postgres[(PostgreSQL)]
+    Service --> OpenAI[OpenAI API]
+
+    subgraph CI_CD[CI/CD]
+        GitHub[GitHub Actions]
+        DockerHub[Docker Hub]
+    end
+
+    subgraph AWS[AWS]
+        EC2[AWS EC2]
+        CloudWatch[AWS CloudWatch Logs]
+    end
+
+    GitHub --> DockerHub
+    GitHub --> EC2
+    DockerHub --> EC2
+    EC2 --> App[Dockerized Spring Boot App]
+    App --> CloudWatch
+```
 
 ## Screenshots
 
@@ -160,19 +213,29 @@ Published image: [igorromanovsolutions/job-fit-analyzer](https://hub.docker.com/
 
 ### Development
 
-Use the development compose file for local build from source.
+Use the development Compose file to build and run the application from source:
 
 ```bash
 docker compose -f compose.dev.yml up --build
 ```
 
-### Production
+### Production-like local run
 
-Use the production compose file to run the published image.
+Use the production Compose file to run the published image with PostgreSQL:
 
 ```bash
 docker compose -f compose.prod.yml up -d
 ```
+
+### AWS EC2 run with CloudWatch logging
+
+AWS-specific logging is configured through a separate Docker Compose override file:
+
+```bash
+docker compose -f compose.prod.yml -f compose.aws.yml up -d
+```
+
+This keeps the base production Compose file portable while enabling CloudWatch log shipping only in the AWS environment.
 
 The application uses PostgreSQL and requires the OpenAI API key to be provided through environment variables.
 
@@ -182,16 +245,72 @@ The application uses PostgreSQL and requires the OpenAI API key to be provided t
 - `OPENAI_API_KEY` — OpenAI API key
 
 ### Application profiles
-- `dev`
-- `postgres`
+- `dev` — local development profile
+- `postgres` — PostgreSQL-backed runtime profile
+
+### Docker Compose files
+- `compose.dev.yml` — local development build from source
+- `compose.prod.yml` — production-like runtime using the published Docker image
+- `compose.aws.yml` — AWS-specific override for CloudWatch logging
+
+## Deployment
+
+The application is deployed to AWS EC2 using GitHub Actions.
+
+The deployment workflow:
+
+- builds and tests the application with Maven
+- builds a Docker image
+- publishes the image to Docker Hub
+- connects to the EC2 instance over SSH
+- checks out the configured deployment branch
+- pulls the target Docker image
+- recreates the application container to ensure the latest image is running
+- sends container logs to AWS CloudWatch through the AWS Compose override
+
+Production deployment uses:
+
+- PostgreSQL as the persistent database
+- Flyway for schema migrations
+- Docker Compose for service orchestration
+- Spring Boot Actuator for health checks
+- AWS CloudWatch Logs for centralized container logging
 
 ## CI/CD
 
-The project includes a GitHub Actions workflow that:
-- builds the application with Maven,
-- runs tests,
-- performs SonarCloud analysis,
-- uploads the built JAR artifact.
+The project uses GitHub Actions for continuous integration and deployment.
+
+The CI workflow includes:
+
+- checking out the source code
+- setting up Java 21
+- restoring Maven dependency cache
+- building the project with Maven
+- running automated tests
+- generating JaCoCo coverage reports
+- running SonarCloud quality analysis
+- uploading the built JAR artifact
+
+The deployment workflow includes:
+
+- building the application
+- authenticating to Docker Hub
+- building and publishing a Docker image
+- deploying the image to AWS EC2 via SSH
+- updating the checked-out deployment branch on the server
+- pulling the target image on the EC2 host
+- recreating the application container
+- forwarding production container logs to AWS CloudWatch
+
+## Observability
+
+The application includes basic production-oriented observability features:
+
+- request correlation IDs are added to logs for traceability
+- Logback is used for application logging
+- Spring Boot Actuator exposes health information
+- Docker Compose health checks monitor container readiness
+- AWS deployments ship container logs to CloudWatch Logs
 
 ## Testing
 
