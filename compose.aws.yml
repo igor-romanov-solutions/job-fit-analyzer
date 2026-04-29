@@ -1,0 +1,9 @@
+services:
+  app:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: eu-central-2
+        awslogs-group: /job-fit-analyzer/prod
+        awslogs-stream: app
+        awslogs-create-group: "true"
